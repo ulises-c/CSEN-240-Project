@@ -169,3 +169,17 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# MacOS files
+.DS_Store
+
+# Large Files
+*.zip
+
+# Images
+images/
+
+# Tensorflow environment
+tensorflow_env/
+tensorflow_env_new/
+tf_gpu_env/
