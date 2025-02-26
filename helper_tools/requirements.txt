@@ -1,0 +1,16 @@
+# pip install -r requirements.txt
+
+numpy
+pandas
+seaborn
+matplotlib
+opencv-python
+scikit-learn
+imbalanced-learn
+Pillow
+tensorflow
+
+# PyTorch - May be installed depending on how the model is trained
+# --extra-index-url https://download.pytorch.org/whl/cu126 # Used to install CUDA 12.6 version of PyTorch
+# torch
+# torchvision
