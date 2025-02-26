@@ -179,7 +179,9 @@ cython_debug/
 # Images
 images/
 
-# Tensorflow environment
+# Virtual environments
 tensorflow_env/
 tensorflow_env_new/
 tf_gpu_env/
+py310/
+py312/

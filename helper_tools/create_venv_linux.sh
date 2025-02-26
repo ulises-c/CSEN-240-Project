@@ -1,8 +1,7 @@
 #!/bin/bash
 
-# Simple script to create a Python virtual environment using venv
-
-# Not yet tested on Ubuntu, but should work with minor adjustments
+# Simple script to create a Python virtual environment using venv and pyenv
+# Tested on Ubuntu (Linux) with pyenv installed
 
 # Usage:
 # 1. chmod +x create_venv.sh
@@ -29,22 +28,32 @@ while getopts "n:v:" opt; do
   esac
 done
 
-# Ensure Python is installed
-if ! command -v python3 &> /dev/null; then
-    echo "Error: Python is not installed. Please install Python $PYTHON_VERSION."
+# Ensure pyenv is installed
+if ! command -v pyenv &> /dev/null; then
+    echo "Error: pyenv is not installed. Install it first: https://github.com/pyenv/pyenv"
     exit 1
 fi
 
-# Ensure the specified Python version is installed
-if ! python3 -c "import sys; assert sys.version_info >= ('$PYTHON_VERSION')" &> /dev/null; then
-    echo "Error: Python $PYTHON_VERSION is not installed. Please install Python $PYTHON_VERSION."
+# Check if the specified Python version is installed with pyenv
+if ! pyenv versions --bare | grep -q "^$PYTHON_VERSION$"; then
+    echo "Python $PYTHON_VERSION is not installed. Installing it via pyenv..."
+    pyenv install $PYTHON_VERSION
+fi
+
+# Set the Python version globally or locally for the virtual environment
+pyenv global $PYTHON_VERSION  # Or use pyenv local $PYTHON_VERSION for a specific project directory
+
+# Ensure the desired Python version is in the path
+PYTHON_PATH=$(pyenv which python)
+if [ ! -x "$PYTHON_PATH" ]; then
+    echo "Error: Python $PYTHON_VERSION not found after installation. Ensure it is installed correctly."
     exit 1
 fi
 
 # Create virtual environment inside the src directory
 echo "Creating virtual environment: $VENV_NAME using Python $PYTHON_VERSION"
 VENV_PATH="../$VENV_NAME"  # Adjust path to create the venv in the parent (src) directory
-python$PYTHON_VERSION -m venv "$VENV_PATH"
+$PYTHON_PATH -m venv "$VENV_PATH"
 
 # Activate the virtual environment
 source "$VENV_PATH/bin/activate"
@@ -60,4 +69,4 @@ else
 fi
 
 # Sanity check: Verify the Python version in the virtual environment
-echo "Virtual environment '$VENV_NAME' is ready with Python $(python --version) on Ubuntu."
+echo "Virtual environment '$VENV_NAME' is ready with Python $(python --version) using pyenv."
