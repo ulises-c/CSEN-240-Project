@@ -4,6 +4,15 @@
 
 # Tested on macOS with Homebrew installed
 
+# Usage:
+# 1. chmod +x create_venv.sh
+# 2. ./create_venv.sh
+# Optional: Specify the virtual environment name and Python version
+# 2. ./create_venv.sh -n [venv_name] -v [python_version]
+# Example: ./create_venv.sh -n myenv -v 3.9
+
+### Script Start ###
+
 # Default virtual environment name
 VENV_NAME="venv"
 
