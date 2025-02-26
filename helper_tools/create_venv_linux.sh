@@ -2,7 +2,7 @@
 
 # Simple script to create a Python virtual environment using venv
 
-# Tested on macOS with Homebrew installed
+# Not yet tested on Ubuntu, but should work with minor adjustments
 
 # Usage:
 # 1. chmod +x create_venv.sh
@@ -29,29 +29,22 @@ while getopts "n:v:" opt; do
   esac
 done
 
-# Ensure Homebrew is installed
-if ! command -v brew &> /dev/null; then
-    echo "Error: Homebrew is not installed. Install it first: https://brew.sh/"
+# Ensure Python is installed
+if ! command -v python3 &> /dev/null; then
+    echo "Error: Python is not installed. Please install Python $PYTHON_VERSION."
     exit 1
 fi
 
 # Ensure the specified Python version is installed
-if ! brew list | grep -q "python@$PYTHON_VERSION"; then
-    echo "Installing Python $PYTHON_VERSION via Homebrew..."
-    brew install "python@$PYTHON_VERSION"
-fi
-
-# Find the correct Python binary
-PYTHON_PATH="$(brew --prefix)/bin/python$PYTHON_VERSION"
-if [ ! -x "$PYTHON_PATH" ]; then
-    echo "Error: Python $PYTHON_VERSION not found. Ensure it is installed correctly."
+if ! python3 -c "import sys; assert sys.version_info >= ('$PYTHON_VERSION')" &> /dev/null; then
+    echo "Error: Python $PYTHON_VERSION is not installed. Please install Python $PYTHON_VERSION."
     exit 1
 fi
 
 # Create virtual environment inside the src directory
 echo "Creating virtual environment: $VENV_NAME using Python $PYTHON_VERSION"
 VENV_PATH="../$VENV_NAME"  # Adjust path to create the venv in the parent (src) directory
-$PYTHON_PATH -m venv "$VENV_PATH"
+python$PYTHON_VERSION -m venv "$VENV_PATH"
 
 # Activate the virtual environment
 source "$VENV_PATH/bin/activate"
@@ -67,4 +60,4 @@ else
 fi
 
 # Sanity check: Verify the Python version in the virtual environment
-echo "Virtual environment '$VENV_NAME' is ready with Python $(python --version) on macOS."
+echo "Virtual environment '$VENV_NAME' is ready with Python $(python --version) on Ubuntu."
