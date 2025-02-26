@@ -66,7 +66,10 @@ def parse_requirements(file_path: str) -> Tuple[List[str], str | None]:
     return packages, extra_index_url
 
 
-if __name__ == "__main__":
+def main() -> None:
+    """
+    Main function to install packages from requirements.txt.
+    """
     requirements_file = "helper_tools/requirements.txt"
 
     # Parse the requirements file
@@ -78,3 +81,7 @@ if __name__ == "__main__":
 
     # Install packages with optional extra index URL
     install_packages(packages, extra_index_url)
+
+
+if __name__ == "__main__":
+    main()
