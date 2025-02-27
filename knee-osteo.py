@@ -4,7 +4,7 @@ import pandas as pd
 import os
 
 # data_path = "images/Knee_Osteoarthritis_Classification_ORIGINAL"
-data_path = "images/Knee_Osteoarthritis_Classification" # Extracted zip file
+data_path = "images/Knee_Osteoarthritis_Classification"  # Extracted zip file
 
 categories = ["Normal", "Osteopenia", "Osteoporosis"]
 
@@ -212,7 +212,7 @@ test_gen_new = ts_gen.flow_from_dataframe(
 )
 
 gpus = tf.config.list_physical_devices("GPU")
-print("Num GPUs Available: ", len(gpus)
+print(f"Num GPUs Available: {len(gpus)}")
 if gpus:
     try:
         for gpu in gpus:

@@ -2,14 +2,13 @@
 
 # Usage:
 # make setup
-# OPTIONAL: make setup VENV_NAME=my_venv
 # make clean
 # make activate
 
 # Define paths and variables
 VENV_NAME = venv
 VENV_DIR = $(VENV_NAME)
-PYTHON_VERSION = 3.10.4
+PYTHON_VERSION = 3.12
 PYENV = pyenv
 INSTALL = pip install -r helper_tools/requirements.txt
 
