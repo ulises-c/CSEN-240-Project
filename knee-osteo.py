@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import os
 
-# data_path = "images/Knee_Osteoarthritis_Classification_ORIGINAL"
+# data_path = "images/Knee_Osteoarthritis_Classification_Original" # Causing issues currently
 data_path = "images/Knee_Osteoarthritis_Classification"  # Extracted zip file
 
 categories = ["Normal", "Osteopenia", "Osteoporosis"]
@@ -172,7 +172,7 @@ print(valid_df_new.shape)
 print(test_df_new.shape)
 
 # %%
-batch_size = 16
+batch_size = 8  # reducing may help with VRAM issues
 img_size = (224, 224)
 channels = 3
 img_shape = (img_size[0], img_size[1], channels)
