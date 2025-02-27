@@ -18,7 +18,7 @@ install-python:
 
 create-venv: install-python
 	@echo "Creating virtual environment in $(VENV_DIR)..."
-	PYENV_VERSION=$(PYTHON_VERSION) python -m venv $(VENV_DIR)
+	PYENV_VERSION=$(PYTHON_VERSION) python3 -m venv $(VENV_DIR)
 
 install: create-venv
 	@echo "Installing dependencies..."
