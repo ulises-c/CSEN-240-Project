@@ -3,7 +3,8 @@ import numpy as np
 import pandas as pd
 import os
 
-data_path = "images/Knee_Osteoarthritis_Classification"
+# data_path = "images/Knee_Osteoarthritis_Classification_ORIGINAL"
+data_path = "images/Knee_Osteoarthritis_Classification" # Extracted zip file
 
 categories = ["Normal", "Osteopenia", "Osteoporosis"]
 
@@ -79,6 +80,9 @@ for i, category in enumerate(categories):
     category_images = df[df["label"] == category]["image_path"].iloc[:num_images]
     for j, img_path in enumerate(category_images):
         img = cv2.imread(img_path)
+        if img is None:
+            print(f"Error loading image: {img_path}")
+            continue
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         plt.subplot(len(categories), num_images, i * num_images + j + 1)
         plt.imshow(img)

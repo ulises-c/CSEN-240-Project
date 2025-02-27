@@ -8,7 +8,8 @@ opencv-python
 scikit-learn
 imbalanced-learn
 Pillow
-tensorflow
+#tensorflow < 4.16
+tensorflow[and-cuda]  # for nvidia GPU support
 
 # PyTorch - May be installed depending on how the model is trained
 # --extra-index-url https://download.pytorch.org/whl/cu126 # Used to install CUDA 12.6 version of PyTorch
