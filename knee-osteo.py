@@ -1,5 +1,3 @@
-# %%
-# Libary imports
 import numpy as np
 import pandas as pd
 import os
@@ -16,13 +14,18 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 import warnings
 
+from imblearn.over_sampling import RandomOverSampler
 from PIL import Image
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, classification_report
+from sklearn.preprocessing import LabelEncoder
 from tensorflow import keras
 from tensorflow.keras.models import Sequential, Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras import regularizers, layers, models
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+from tensorflow.keras.applications import Xception
 from tensorflow.keras.layers import (
     Conv2D,
     MaxPooling2D,
@@ -40,14 +43,7 @@ from tensorflow.keras.layers import (
     MultiHeadAttention,
     Reshape,
 )
-from tensorflow.keras import regularizers, layers, models
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
-from tensorflow.keras.applications import Xception
-from sklearn.preprocessing import LabelEncoder
-from imblearn.over_sampling import RandomOverSampler
 
-
-# %%
 
 # data_path = "images/Knee_Osteoarthritis_Classification_Original" # Causing issues currently
 data_path = "images/Knee_Osteoarthritis_Classification"  # Extracted zip file
@@ -65,19 +61,17 @@ for category in categories:
         labels.append(category)
 
 
-# %%
 df = pd.DataFrame({"image_path": image_paths, "label": labels})
 print(df.shape)
 
 
-# %%
 print(df.duplicated().sum())
 print(df.isnull().sum())
 print(df.info())
 print("Unique labels: {}".format(df["label"].unique()))
 print("Label counts: {}".format(df["label"].value_counts()))
 
-# %%
+
 sns.set_style("whitegrid")
 
 fig, ax = plt.subplots(figsize=(8, 6))
@@ -98,7 +92,7 @@ for p in ax.patches:
     )
 # plt.show()
 
-# %%
+
 label_counts = df["label"].value_counts()
 fig, ax = plt.subplots(figsize=(8, 6))
 colors = sns.color_palette("viridis", len(label_counts))
@@ -114,7 +108,7 @@ ax.pie(
 ax.set_title("Distribution of Tumor Types - Pie Chart", fontsize=14, fontweight="bold")
 # plt.show()
 
-# %%
+
 num_images = 5
 plt.figure(figsize=(15, 12))
 for i, category in enumerate(categories):
@@ -135,13 +129,12 @@ plt.show(block=False)
 plt.pause(5)
 plt.close()
 
-# %%
+
 label_encoder = LabelEncoder()
 df["category_encoded"] = label_encoder.fit_transform(df["label"])
 df = df[["image_path", "category_encoded"]]
 
 
-# %%
 ros = RandomOverSampler(random_state=42)
 X_resampled, y_resampled = ros.fit_resample(df[["image_path"]], df["category_encoded"])
 df_resampled = pd.DataFrame(X_resampled, columns=["image_path"])
@@ -150,16 +143,16 @@ print("\nClass distribution after oversampling:")
 print(df_resampled["category_encoded"].value_counts())
 print(df_resampled)
 
-# %%
+
 df_resampled["category_encoded"] = df_resampled["category_encoded"].astype(str)
 
-# %%
+
 sns.set_style("darkgrid")
 
 warnings.filterwarnings("ignore")
 print("check")
 
-# %%
+
 train_df_new, temp_df_new = train_test_split(
     df_resampled,
     train_size=0.8,
@@ -170,7 +163,7 @@ train_df_new, temp_df_new = train_test_split(
 print(train_df_new.shape)
 print(temp_df_new.shape)
 
-# %%
+
 valid_df_new, test_df_new = train_test_split(
     temp_df_new,
     test_size=0.5,
@@ -181,7 +174,7 @@ valid_df_new, test_df_new = train_test_split(
 print(valid_df_new.shape)
 print(test_df_new.shape)
 
-# %%
+
 batch_size = 8  # reducing may help with VRAM issues
 img_size = (224, 224)
 channels = 3
@@ -233,7 +226,7 @@ if gpus:
 else:
     print("No GPU available")
 
-# %%
+
 early_stopping = EarlyStopping(
     monitor="val_loss", patience=5, restore_best_weights=True
 )
@@ -269,7 +262,6 @@ input_shape = (224, 224, 3)
 cnn_model = create_xception_model(input_shape, num_classes=3, learning_rate=1e-4)
 
 
-# %%
 history = cnn_model.fit(
     train_gen_new,
     validation_data=valid_gen_new,
