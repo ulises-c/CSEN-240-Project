@@ -1,7 +1,57 @@
 # %%
+# Libary imports
 import numpy as np
 import pandas as pd
 import os
+import cv2
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import LabelEncoder
+from imblearn.over_sampling import RandomOverSampler
+import time
+import shutil
+import pathlib
+import itertools
+from PIL import Image
+import cv2
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix, classification_report
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.layers import (
+    Conv2D,
+    MaxPooling2D,
+    Flatten,
+    Dense,
+    Activation,
+    Dropout,
+    BatchNormalization,
+)
+from tensorflow.keras import regularizers
+import warnings
+import tensorflow as tf
+from tensorflow.keras import layers, models
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+from tensorflow.keras.applications import Xception
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import (
+    Input,
+    GlobalAveragePooling2D,
+    Dense,
+    Dropout,
+    BatchNormalization,
+    GaussianNoise,
+    MultiHeadAttention,
+    Reshape,
+)
+from tensorflow.keras.optimizers import Adam
+
+# %%
 
 # data_path = "images/Knee_Osteoarthritis_Classification_Original" # Causing issues currently
 data_path = "images/Knee_Osteoarthritis_Classification"  # Extracted zip file
@@ -32,9 +82,6 @@ print("Unique labels: {}".format(df["label"].unique()))
 print("Label counts: {}".format(df["label"].value_counts()))
 
 # %%
-import seaborn as sns
-import matplotlib.pyplot as plt
-
 sns.set_style("whitegrid")
 
 fig, ax = plt.subplots(figsize=(8, 6))
@@ -72,8 +119,6 @@ ax.set_title("Distribution of Tumor Types - Pie Chart", fontsize=14, fontweight=
 # plt.show()
 
 # %%
-import cv2
-
 num_images = 5
 plt.figure(figsize=(15, 12))
 for i, category in enumerate(categories):
@@ -95,16 +140,12 @@ plt.pause(5)
 plt.close()
 
 # %%
-from sklearn.preprocessing import LabelEncoder
-
 label_encoder = LabelEncoder()
 df["category_encoded"] = label_encoder.fit_transform(df["label"])
 df = df[["image_path", "category_encoded"]]
 
 
 # %%
-from imblearn.over_sampling import RandomOverSampler
-
 ros = RandomOverSampler(random_state=42)
 X_resampled, y_resampled = ros.fit_resample(df[["image_path"]], df["category_encoded"])
 df_resampled = pd.DataFrame(X_resampled, columns=["image_path"])
@@ -117,34 +158,7 @@ print(df_resampled)
 df_resampled["category_encoded"] = df_resampled["category_encoded"].astype(str)
 
 # %%
-import time
-import shutil
-import pathlib
-import itertools
-from PIL import Image
-import cv2
-import seaborn as sns
-
 sns.set_style("darkgrid")
-import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import confusion_matrix, classification_report
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.layers import (
-    Conv2D,
-    MaxPooling2D,
-    Flatten,
-    Dense,
-    Activation,
-    Dropout,
-    BatchNormalization,
-)
-from tensorflow.keras import regularizers
-import warnings
 
 warnings.filterwarnings("ignore")
 print("check")
@@ -224,27 +238,9 @@ else:
     print("No GPU available")
 
 # %%
-import tensorflow as tf
-from tensorflow.keras import layers, models
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
-
 early_stopping = EarlyStopping(
     monitor="val_loss", patience=5, restore_best_weights=True
 )
-from tensorflow.keras.applications import Xception
-from tensorflow.keras.models import Model
-from tensorflow.keras.layers import (
-    Input,
-    GlobalAveragePooling2D,
-    Dense,
-    Dropout,
-    BatchNormalization,
-    GaussianNoise,
-    MultiHeadAttention,
-    Reshape,
-)
-from tensorflow.keras.optimizers import Adam
-
 
 def create_xception_model(input_shape, num_classes=8, learning_rate=1e-4):
     inputs = Input(shape=input_shape, name="Input_Layer")
