@@ -6,21 +6,21 @@ import os
 import cv2
 import seaborn as sns
 import matplotlib.pyplot as plt
-from sklearn.preprocessing import LabelEncoder
-from imblearn.over_sampling import RandomOverSampler
 import time
 import shutil
 import pathlib
 import itertools
-from PIL import Image
 import cv2
 import seaborn as sns
 import matplotlib.pyplot as plt
+import tensorflow as tf
+import warnings
+
+from PIL import Image
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, classification_report
-import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras.models import Sequential
+from tensorflow.keras.models import Sequential, Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.layers import (
@@ -31,15 +31,6 @@ from tensorflow.keras.layers import (
     Activation,
     Dropout,
     BatchNormalization,
-)
-from tensorflow.keras import regularizers
-import warnings
-import tensorflow as tf
-from tensorflow.keras import layers, models
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
-from tensorflow.keras.applications import Xception
-from tensorflow.keras.models import Model
-from tensorflow.keras.layers import (
     Input,
     GlobalAveragePooling2D,
     Dense,
@@ -49,7 +40,12 @@ from tensorflow.keras.layers import (
     MultiHeadAttention,
     Reshape,
 )
-from tensorflow.keras.optimizers import Adam
+from tensorflow.keras import regularizers, layers, models
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+from tensorflow.keras.applications import Xception
+from sklearn.preprocessing import LabelEncoder
+from imblearn.over_sampling import RandomOverSampler
+
 
 # %%
 
@@ -241,6 +237,7 @@ else:
 early_stopping = EarlyStopping(
     monitor="val_loss", patience=5, restore_best_weights=True
 )
+
 
 def create_xception_model(input_shape, num_classes=8, learning_rate=1e-4):
     inputs = Input(shape=input_shape, name="Input_Layer")
