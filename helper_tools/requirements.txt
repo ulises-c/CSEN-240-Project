@@ -1,5 +1,6 @@
 # pip install -r requirements.txt
 
+# Common dependencies
 numpy
 pandas
 seaborn
@@ -8,10 +9,11 @@ opencv-python
 scikit-learn
 imbalanced-learn
 Pillow
-#tensorflow < 4.16
-tensorflow[and-cuda]  # for nvidia GPU support
 
-# PyTorch - May be installed depending on how the model is trained
-# --extra-index-url https://download.pytorch.org/whl/cu126 # Used to install CUDA 12.6 version of PyTorch
-# torch
-# torchvision
+# TensorFlow - Install based on platform
+# For macOS (specifically Apple Silicon)
+tensorflow-macos; sys_platform == "darwin"
+tensorflow-metal; sys_platform == "darwin"
+
+# For PCs with Nvidia GPUs
+tensorflow[and-cuda]; sys_platform == "linux" or sys_platform == "win32"  # For Nvidia GPUs
