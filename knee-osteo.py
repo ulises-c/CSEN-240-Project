@@ -270,7 +270,7 @@ test_gen_new = valid_test_data_gen.flow_from_dataframe(
 )
 
 def log_epoch_data(epoch, logs):
-    logger.info(f"Epoch {epoch + 1:3} | Loss: {logs['loss']:.4f} | Accuracy: {logs['accuracy']:.4f} | Val Loss: {logs['val_loss']:.4f} | Val Accuracy: {logs['val_accuracy']:.4f}")
+    logger.info(f"Epoch {epoch + 1:3} | Accuracy: {logs['accuracy']:.4f} | Loss: {logs['loss']:.4f} | Val Accuracy: {logs['val_accuracy']:.4f} | Val Loss: {logs['val_loss']:.4f}")
 
 # Set up Lambda callback to log epoch data
 log_epoch_callback = LambdaCallback(on_epoch_end=log_epoch_data)
