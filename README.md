@@ -8,10 +8,32 @@ Project for Santa Clara University (SCU) CSEN/COEN 240
 Only the following may be optimized
 1. ML model
 2. Hyper-parameters
-Not allowed
-1. Pre-processsing images
+   
+<br>
 
+Not allowed
+1. Chaning image scale
+   1. No color space manipulation (e.g. RGB -> greyscale)
+   2. Resolution changes (upscale or downscale)
+
+## Notes
+1. With `mixed-precision` on an RTX 3070 and M4 Mac Mini `batch_size` is most stable at 64 (from current testing)
+
+### Changes made so far
+Not in any particular order
+1. Cleaned up imports
+2. Changed from notebook cell style to traditional python script
+3. Created helper tools to have this run on macOS (Apple Silicon) and Linux
+   1. More on that in `How to run` section
+4. Created `plot_util.py` instead of keeping plots in `knee-osteo.py`
+5. Logging data and parameters to have traceability so that models can easily be recreated
+6. Made hyper-parameters and other config parameter read from a JSON file
+7. Changed learning rate to use exponential decay instead a fixed learning rate
+8. Augmented training data (rotation, vertical flip, horizontal flip, zoom, height shift, width shift, shearing, etc.)
+9. Enabled `mixed-precision` mode
+   1.  This was a big game changer, reduced training time heavily by allowing better use of more recent hardware
+   2.  Increased `batch_size` as a result of reduced VRAM usage
 
 ## Monitor performance
 Ubuntu: nvtop - [github](https://github.com/Syllo/nvtop?tab=readme-ov-file#nvtop)
-macOS: asitop - [brew](https://formulae.brew.sh/formula/asitop) | [github](https://github.com/tlkh/asitop)
+macOS: asitop - [github](https://github.com/tlkh/asitop) | [brew](https://formulae.brew.sh/formula/asitop)
