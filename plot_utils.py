@@ -1,7 +1,11 @@
+"""Utility functions for plotting data and model performance."""
+
 import matplotlib.pyplot as plt
 import seaborn as sns
 import cv2
 import os
+
+PLOT_SHOW_TIME = 3
 
 def save_plot(plot_name, identifier, save_dir="plots"):
     """Saves the current plot as a PNG file with a unique identifier."""
@@ -11,7 +15,7 @@ def save_plot(plot_name, identifier, save_dir="plots"):
     plt.savefig(save_path)
     print(f"Plot saved at {save_path}")
 
-def plot_label_distribution(df, identifier=None, save=False):
+def plot_label_distribution(df, identifier=None, save=False, show=False):
     """Plots the distribution of labels in the dataset."""
     plt.figure(figsize=(8, 6))
     sns.countplot(data=df, x="label", palette="viridis")
@@ -26,9 +30,11 @@ def plot_label_distribution(df, identifier=None, save=False):
                            xytext=(0, 5), textcoords="offset points")
     if save and identifier:
         save_plot("label_distribution", identifier)
-    plt.show()
+    if show:
+        plt.pause(PLOT_SHOW_TIME) # Pause for a few seconds before closing
+        plt.close()
 
-def plot_sample_images(df, categories, num_images=5, identifier=None, save=False):
+def plot_sample_images(df, categories, num_images=5, identifier=None, save=False, show=False):
     """Displays sample images from each category."""
     plt.figure(figsize=(15, 12))
     for i, category in enumerate(categories):
@@ -46,9 +52,11 @@ def plot_sample_images(df, categories, num_images=5, identifier=None, save=False
     if save and identifier:
         save_plot("sample_images", identifier)
     plt.tight_layout()
-    plt.show()
+    if show:
+        plt.pause(PLOT_SHOW_TIME) # Pause for a few seconds before closing
+        plt.close()
 
-def plot_training_history(history, identifier=None, save=False):
+def plot_training_history(history, identifier=None, save=False, show=False):
     """Plots the accuracy and loss curves after training."""
     plt.figure(figsize=(12, 5))
 
@@ -72,9 +80,11 @@ def plot_training_history(history, identifier=None, save=False):
 
     if save and identifier:
         save_plot("training_history", identifier)
-    plt.show()
+    if show:
+        plt.pause(PLOT_SHOW_TIME) # Pause for a few seconds before closing
+        plt.close()
 
-def plot_confusion_matrix(conf_matrix, class_names, identifier=None, save=False):
+def plot_confusion_matrix(conf_matrix, class_names, identifier=None, save=False, show=False):
     """Plots the confusion matrix."""
     plt.figure(figsize=(10, 8))
     sns.heatmap(conf_matrix, annot=True, fmt="d", cmap="Blues",
@@ -84,4 +94,6 @@ def plot_confusion_matrix(conf_matrix, class_names, identifier=None, save=False)
     plt.ylabel("True Label")
     if save and identifier:
         save_plot("confusion_matrix", identifier)
-    plt.show()
+    if show:
+        plt.pause(PLOT_SHOW_TIME) # Pause for a few seconds before closing
+        plt.close()

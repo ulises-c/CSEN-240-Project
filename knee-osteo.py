@@ -66,6 +66,7 @@ with open("hyperparameters.json", "r") as f:
 
 ENABLE_PLOTS = hyperparameters["enable_plots"]
 SAVE_PLOTS = hyperparameters["save_plots"]
+SHOW_PLOTS = hyperparameters["show_plots"]
 ENABLE_TF_DETERMINISM = hyperparameters["enable_tf_determinism"]
 SAVE_BEST_MODEL = hyperparameters["save_best_model"]
 CONVERT_TO_COREML = hyperparameters["convert_to_coreml"]
@@ -175,8 +176,8 @@ df = pd.DataFrame({"image_path": image_paths, "label": labels})
 sns.set_style("whitegrid")
 
 if ENABLE_PLOTS:
-    plot_utils.plot_label_distribution(df, identifier=IDENTIFIER, save=SAVE_PLOTS)
-    plot_utils.plot_sample_images(df, categories, num_images=5, identifier=IDENTIFIER, save=SAVE_PLOTS)
+    plot_utils.plot_label_distribution(df, identifier=IDENTIFIER, save=SAVE_PLOTS, show=SHOW_PLOTS)
+    plot_utils.plot_sample_images(df, categories, num_images=5, identifier=IDENTIFIER, save=SAVE_PLOTS, show=SHOW_PLOTS)
 
 label_encoder = LabelEncoder()
 df["category_encoded"] = label_encoder.fit_transform(df["label"])
@@ -269,7 +270,7 @@ test_gen_new = valid_test_data_gen.flow_from_dataframe(
 )
 
 def log_epoch_data(epoch, logs):
-    logger.info(f"Epoch {epoch + 1:3.0} | Loss: {logs['loss']:.4f} | Accuracy: {logs['accuracy']:.4f} | Val Loss: {logs['val_loss']:.4f} | Val Accuracy: {logs['val_accuracy']:.4f}")
+    logger.info(f"Epoch {epoch + 1:3} | Loss: {logs['loss']:.4f} | Accuracy: {logs['accuracy']:.4f} | Val Loss: {logs['val_loss']:.4f} | Val Accuracy: {logs['val_accuracy']:.4f}")
 
 # Set up Lambda callback to log epoch data
 log_epoch_callback = LambdaCallback(on_epoch_end=log_epoch_data)
@@ -370,8 +371,8 @@ print(report)
 conf_matrix = confusion_matrix(test_labels, predicted_classes)
 
 if ENABLE_PLOTS:
-    plot_utils.plot_training_history(history, identifier=IDENTIFIER, save=SAVE_PLOTS)
-    plot_utils.plot_confusion_matrix(conf_matrix, list(test_gen_new.class_indices.keys()), identifier=IDENTIFIER, save=SAVE_PLOTS)
+    plot_utils.plot_training_history(history, identifier=IDENTIFIER, save=SAVE_PLOTS, show=SHOW_PLOTS)
+    plot_utils.plot_confusion_matrix(conf_matrix, list(test_gen_new.class_indices.keys()), identifier=IDENTIFIER, save=SAVE_PLOTS, show=SHOW_PLOTS)
 
 end_time = time.perf_counter()
 execution_time = end_time - start_time
