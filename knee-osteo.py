@@ -26,6 +26,7 @@ from sklearn.preprocessing import LabelEncoder
 from tensorflow import keras
 from tensorflow.keras.models import Sequential, Model
 from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.optimizers.schedules import ExponentialDecay
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras import regularizers, layers, models
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, LambdaCallback
@@ -50,47 +51,59 @@ from tensorflow.keras.layers import (
     Reshape,
 )
 
-# TODO: Add support for mixed precision training
 # TODO: Add support for sklearn.utils shuffle
 # TODO: Add support for sklearn.utils resample
 # TODO: Add support for sklearn.metrics accuracy_score
-# TODO: Add support for logging
 # TODO: Checkout Tensorflow Logging
 # TODO: Checkout Tensorboard
+
+# TODO: Add support of Exponential Decay Learning Rate
+
+# URGENT TODO: Dynamic batch sizing based on hardware
+# Example: JSON will have fixed batch based on hardware (fine tuned by user)
+# Then the code will check which hardware it is running on and choose the batch size accordingly
+# For example on an RTX 3070, batch size with mixed precision may be able to go as high as 256
+# But on a M4 Mac Mini, it may only be able to go as high as 32
+# And without mixed precision, it may only be able to go as high as 8
+
+# POTENTIAL TODO: Merge logs and plots into a single directory
+# POTENTIAL TODO: Add support for saving model history to a JSON file
+# POTENTIAL TODO: Add support for saving model checkpoints
 
 start_time = time.perf_counter()
 
 # Load hyperparameters from a JSON file
-with open("hyperparameters.json", "r") as f:
-    hyperparameters = json.load(f)
+with open("config.json", "r") as f:
+    config = json.load(f)
 
-ENABLE_PLOTS = hyperparameters["enable_plots"]
-SAVE_PLOTS = hyperparameters["save_plots"]
-SHOW_PLOTS = hyperparameters["show_plots"]
-ENABLE_TF_DETERMINISM = hyperparameters["enable_tf_determinism"]
-SAVE_BEST_MODEL = hyperparameters["save_best_model"]
-CONVERT_TO_COREML = hyperparameters["convert_to_coreml"]
-RANDOM_SEED = hyperparameters["random_seed"]
-BATCH_SIZE = hyperparameters["batch_size"] # reducing may help with VRAM issues, but may also reduce accuracy, original was 16
-IMG_SIZE = tuple(hyperparameters["img_size"])
-CHANNELS = hyperparameters["channels"]
-LEARNING_RATE = hyperparameters["learning_rate"]
-NUM_CLASSES = hyperparameters["num_classes"]
-EPOCHS = hyperparameters["epochs"]
-EARLY_STOPPING_PATIENCE = hyperparameters["early_stopping_patience"]
-DROPOUT_RATE = hyperparameters["dropout_rate"]
-GAUSSIAN_NOISE_STDDEV = hyperparameters["gaussian_noise_stddev"]
-NUM_ATTENTION_HEADS = hyperparameters["num_attention_heads"]
-ATTENTION_KEY_DIM = hyperparameters["attention_key_dim"] # Based on the number of channels in the input (3 in this case for RGB)
-TRAIN_SPLIT = hyperparameters["train_split"]
-VALID_TEST_SPLIT = hyperparameters["valid_test_split"]
-ENABLE_MIXED_PRECISION = hyperparameters["enable_mixed_precision"]
-USE_EARLY_STOPPING = hyperparameters["use_early_stopping"]
-OPTIMIZER = hyperparameters["optimizer"]
-LOSS_FUNCTION = hyperparameters["loss_function"]
-METRICS = hyperparameters["metrics"]
-AUGMENTATION = hyperparameters["augmentation"]
-
+ENABLE_PLOTS = config["enable_plots"]
+SAVE_PLOTS = config["save_plots"]
+SHOW_PLOTS = config["show_plots"]
+ENABLE_TF_DETERMINISM = config["enable_tf_determinism"]
+SAVE_BEST_MODEL = config["save_best_model"]
+CONVERT_TO_COREML = config["convert_to_coreml"]
+UNFREEZE_LAYERS = config["unfreeze_layers"]
+UNFREEZE_LAST_N_LAYERS = config["unfreeze_last_n_layers"]
+RANDOM_SEED = config["random_seed"]
+BATCH_SIZE = config["batch_size"] # reducing may help with VRAM issues, but may also reduce accuracy, original was 16
+IMG_SIZE = tuple(config["img_size"])
+CHANNELS = config["channels"]
+LEARNING_RATE = config["learning_rate"]
+NUM_CLASSES = config["num_classes"]
+EPOCHS = config["epochs"]
+EARLY_STOPPING_PATIENCE = config["early_stopping_patience"]
+DROPOUT_RATE = config["dropout_rate"]
+GAUSSIAN_NOISE_STDDEV = config["gaussian_noise_stddev"]
+NUM_ATTENTION_HEADS = config["num_attention_heads"]
+ATTENTION_KEY_DIM = config["attention_key_dim"] # Based on the number of channels in the input (3 in this case for RGB)
+TRAIN_SPLIT = config["train_split"]
+VALID_TEST_SPLIT = config["valid_test_split"]
+ENABLE_MIXED_PRECISION = config["enable_mixed_precision"]
+USE_EARLY_STOPPING = config["use_early_stopping"]
+OPTIMIZER = config["optimizer"]
+LOSS_FUNCTION = config["loss_function"]
+METRICS = config["metrics"]
+AUGMENTATION = config["augmentation"]
 
 # Set random seed for reproducibility, requires ENABLE_TF_DETERMINISM to be set to True
 random.seed(RANDOM_SEED)
@@ -122,6 +135,11 @@ log_file_name = f"{log_dir}/knee_osteo_{IDENTIFIER}.log"
 # Configure logging to write to the generated log file
 logging.basicConfig(level=logging.INFO, filename=log_file_name, filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+console = logging.StreamHandler()
+console.setLevel(logging.INFO) # Set to INFO to display only important information, DEBUG to display all information
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+console.setFormatter(formatter)
+logger.addHandler(console)
 
 ### Log important information
 gpus = tf.config.list_physical_devices("GPU")
@@ -129,10 +147,10 @@ logger.info("--- START ---")
 logger.info(f"Start Time: {current_time}")
 logger.info(f"System Platform: {system_platform}")
 logger.info(f"GPU Available: {gpus}")
-logger.info(f"--- Hyperparameters Start ---")
-for key, value in hyperparameters.items():
+logger.info(f"--- config.json ---")
+for key, value in config.items():
     logger.info(f"{key}: {value}")
-logger.info(f"--- Hyperparameters End ---")
+logger.info(f"--- config.json ---")
 
 # Enable GPU acceleration if available
 if gpus:
@@ -165,19 +183,18 @@ for category in categories:
 
 
 df = pd.DataFrame({"image_path": image_paths, "label": labels})
-# print(df.shape)
-# print(df.duplicated().sum())
-# print(df.isnull().sum())
-# print(df.info())
+# logger.info(df.shape)
+# logger.info(df.duplicated().sum())
+# logger.info(df.isnull().sum())
+# logger.info(df.info())
 # logger.info("Unique labels: {}".format(df["label"].unique()))
 # logger.info("Label counts: {}".format(df["label"].value_counts()))
 
 
-sns.set_style("whitegrid")
-
 if ENABLE_PLOTS:
-    plot_utils.plot_label_distribution(df, identifier=IDENTIFIER, save=SAVE_PLOTS, show=SHOW_PLOTS)
-    plot_utils.plot_sample_images(df, categories, num_images=5, identifier=IDENTIFIER, save=SAVE_PLOTS, show=SHOW_PLOTS)
+    plotter = plot_utils.PlotUtils(logger=logger, save_dir="plots", identifier=IDENTIFIER, save=SAVE_PLOTS, show=SHOW_PLOTS)
+    plotter.plot_label_distribution(df)
+    plotter.plot_sample_images(df, categories, num_images=5)
 
 label_encoder = LabelEncoder()
 df["category_encoded"] = label_encoder.fit_transform(df["label"])
@@ -189,14 +206,11 @@ X_resampled, y_resampled = ros.fit_resample(df[["image_path"]], df["category_enc
 df_resampled = pd.DataFrame(X_resampled, columns=["image_path"])
 df_resampled["category_encoded"] = y_resampled
 # logger.info("\nClass distribution after oversampling:")
-# print(df_resampled["category_encoded"].value_counts())
-# print(df_resampled)
+# logger.info(df_resampled["category_encoded"].value_counts())
+# logger.info(df_resampled)
 
 
 df_resampled["category_encoded"] = df_resampled["category_encoded"].astype(str)
-
-
-sns.set_style("darkgrid")
 
 warnings.filterwarnings("ignore")
 
@@ -207,8 +221,8 @@ train_df_new, temp_df_new = train_test_split(
     random_state=RANDOM_SEED,
     stratify=df_resampled["category_encoded"],
 )
-# print(train_df_new.shape)
-# print(temp_df_new.shape)
+# logger.info(train_df_new.shape)
+# logger.info(temp_df_new.shape)
 
 valid_df_new, test_df_new = train_test_split(
     temp_df_new,
@@ -217,8 +231,8 @@ valid_df_new, test_df_new = train_test_split(
     random_state=RANDOM_SEED,
     stratify=temp_df_new["category_encoded"],
 )
-# print(valid_df_new.shape)
-# print(test_df_new.shape)
+# logger.info(valid_df_new.shape)
+# logger.info(test_df_new.shape)
 
 # Train data generator (with augmentation)
 ### NOTE: This may not be allowed within project constraints ###
@@ -270,7 +284,12 @@ test_gen_new = valid_test_data_gen.flow_from_dataframe(
 )
 
 def log_epoch_data(epoch, logs):
+    # Temporarily disable the console handler, to prevent duplicate lines in console
+    logger.removeHandler(console)
+    # Log epoch data
     logger.info(f"Epoch {epoch + 1:3} | Accuracy: {logs['accuracy']:.4f} | Loss: {logs['loss']:.4f} | Val Accuracy: {logs['val_accuracy']:.4f} | Val Loss: {logs['val_loss']:.4f}")
+    # Re-enable the console handler
+    logger.addHandler(console)
 
 # Set up Lambda callback to log epoch data
 log_epoch_callback = LambdaCallback(on_epoch_end=log_epoch_data)
@@ -285,10 +304,25 @@ callbacks = [log_epoch_callback]
 if USE_EARLY_STOPPING:
     callbacks.append(early_stopping)
 
-def create_xception_model(input_shape, num_classes=8, learning_rate=1e-4):
+lr_schedule = ExponentialDecay(
+    initial_learning_rate=LEARNING_RATE,
+    decay_steps=10000,
+    decay_rate=0.96,
+    staircase=True,
+)
+
+def create_xception_model(input_shape):
     inputs = Input(shape=input_shape, name="Input_Layer")
     base_model = Xception(weights="imagenet", input_tensor=inputs, include_top=False)
-    base_model.trainable = False
+
+    # Unfreeze last N layers if required (based on JSON hyperparameters)
+    if UNFREEZE_LAYERS:
+        base_model.trainable = True
+        for layer in base_model.layers[:-UNFREEZE_LAST_N_LAYERS]:
+            layer.trainable = False
+    else:
+        base_model.trainable = False
+    
     x = base_model.output
     height, width, channels = x.shape[1], x.shape[2], x.shape[3]
     x = Reshape((height * width, channels), name="Reshape_to_Sequence")(x)
@@ -301,24 +335,25 @@ def create_xception_model(input_shape, num_classes=8, learning_rate=1e-4):
     x = Dense(512, activation="relu", name="FC_512")(x)
     x = BatchNormalization(name="Batch_Normalization")(x)
     x = Dropout(DROPOUT_RATE, name="Dropout")(x)
-    outputs = Dense(num_classes, activation="softmax", name="Output_Layer")(x)
+    outputs = Dense(NUM_CLASSES, activation="softmax", name="Output_Layer")(x)
     model = Model(inputs=inputs, outputs=outputs, name="Xception_with_Attention")
     model.compile(
-        optimizer=Adam(learning_rate=learning_rate),
+        # optimizer=Adam(learning_rate=LEARNING_RATE), # Without learning rate schedule using exponential decay
+        optimizer = Adam(learning_rate=lr_schedule),
         loss=LOSS_FUNCTION,
         metrics=METRICS,
     )
     return model
 
 img_shape = (IMG_SIZE[0], IMG_SIZE[1], CHANNELS)
-cnn_model = create_xception_model(img_shape, num_classes=NUM_CLASSES, learning_rate=LEARNING_RATE)
+cnn_model = create_xception_model(img_shape)
 
 history = cnn_model.fit(
     train_gen_new,
     validation_data=valid_gen_new,
     epochs=EPOCHS,
     callbacks=callbacks,
-    verbose=1,
+    verbose=1, # Verbose 0 for silent, 1 for progress bar, 2 for one line per epoch
 )
 
 if SAVE_BEST_MODEL:
@@ -355,9 +390,8 @@ def ppo_loss(y_true, y_pred):
     loss = -tf.reduce_mean(tf.minimum(ratio, clipped_ratio))
     return loss
 
-
 ppo_loss_value = ppo_loss(y_true, y_pred)
-print(f"\nPPO Loss on Validation Data: {ppo_loss_value.numpy()}")
+logger.info(f"PPO Loss on Validation Data: {ppo_loss_value.numpy()}")
 
 test_labels = test_gen_new.classes
 predictions = cnn_model.predict(test_gen_new)
@@ -366,16 +400,23 @@ predicted_classes = np.argmax(predictions, axis=1)
 report = classification_report(
     test_labels, predicted_classes, target_names=list(test_gen_new.class_indices.keys())
 )
-print(report)
+logger.info(report)
 
 conf_matrix = confusion_matrix(test_labels, predicted_classes)
 
 if ENABLE_PLOTS:
-    plot_utils.plot_training_history(history, identifier=IDENTIFIER, save=SAVE_PLOTS, show=SHOW_PLOTS)
-    plot_utils.plot_confusion_matrix(conf_matrix, list(test_gen_new.class_indices.keys()), identifier=IDENTIFIER, save=SAVE_PLOTS, show=SHOW_PLOTS)
+    plotter.plot_training_history(history)
+    plotter.plot_confusion_matrix(conf_matrix, class_names=list(test_gen_new.class_indices.keys()))
 
-end_time = time.perf_counter()
-execution_time = end_time - start_time
-logger.info(f"Execution time: {execution_time:.2f} seconds")
+def convert_perf_time(perf_time:float) -> str:
+    # Convert performance time to hours, minutes, and seconds
+    # Return ISO formatted time string
+    hours = perf_time // 3600
+    minutes = (perf_time % 3600) // 60
+    seconds = perf_time % 60
+    milliseconds = (seconds - int(seconds)) * 1000
+    return f"{int(hours):02}:{int(minutes):02}:{int(seconds):02}.{int(milliseconds):03}"
 
+execution_time = convert_perf_time(time.perf_counter() - start_time)
+logger.info(f"Execution time: {execution_time} seconds")
 logger.info("--- END ---")
