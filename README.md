@@ -19,7 +19,7 @@ Not allowed
 ## Notes
 1. With `mixed-precision` on an RTX 3070 and M4 Mac Mini `batch_size` is most stable at 64 (from current testing)
 
-### Changes made so far
+### Changes made to base code
 Not in any particular order
 1. Cleaned up imports
 2. Changed from notebook cell style to traditional python script
@@ -34,6 +34,18 @@ Not in any particular order
    1.  This was a big game changer, reduced training time heavily by allowing better use of more recent hardware
    2.  Increased `batch_size` as a result of reduced VRAM usage
 
+
+### How to run
+Use the `Makefile` which utilizes `helper_tools/requirements.txt` to create a consistent python environment across machines
+1. Extract `Knee_Osteoarthritis_Classification_Camino.zip` to `images/Knee_Osteoarthritis_Classification_Camino`
+2. In the terminal with the project directory open enter the following
+   1. `make run`
+   2. `out/` will contain output data from model training, such as the following:
+      1. logs
+      2. plots
+      3. models
+
 ## Monitor performance
-Ubuntu: nvtop - [github](https://github.com/Syllo/nvtop?tab=readme-ov-file#nvtop)
-macOS: asitop - [github](https://github.com/tlkh/asitop) | [brew](https://formulae.brew.sh/formula/asitop)
+Monitor GPU usage as you train with one of the following tools depending on your platform
+- Ubuntu: nvtop - [github](https://github.com/Syllo/nvtop?tab=readme-ov-file#nvtop)
+- macOS: asitop - [github](https://github.com/tlkh/asitop) | [brew](https://formulae.brew.sh/formula/asitop)

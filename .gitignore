@@ -178,13 +178,12 @@ cython_debug/
 
 # Images
 images/
+
+# Generated output
 plots/
-
-# Models
 models/
-
-# Logs
 logs/
+out/
 
 # Virtual environments
 .python-version

@@ -121,16 +121,16 @@ if ENABLE_MIXED_PRECISION:
     policy = mixed_precision.Policy("mixed_float16")
     mixed_precision.set_global_policy(policy)
 
-# Check if logs directory exists, create if not
-log_dir = 'logs'
-if not os.path.exists(log_dir):
-    os.makedirs(log_dir)
-
 # Generate log file name with ISO format date-time and system platform
 current_time = datetime.now().isoformat(timespec='seconds')
 system_platform = platform.system()
 IDENTIFIER = f"{current_time}_{system_platform}"
-log_file_name = f"{log_dir}/knee_osteo_{IDENTIFIER}.log"
+out_dir = 'out'
+out_full_path = os.path.join(out_dir, IDENTIFIER) # out/{IDENTIFIER}
+# Check if logs directory exists, create if not
+if not os.path.exists(out_full_path):
+    os.makedirs(out_full_path)
+log_file_name = f"{out_full_path}/knee_osteo_{IDENTIFIER}.log"
 
 # Configure logging to write to the generated log file
 logging.basicConfig(level=logging.INFO, filename=log_file_name, filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
@@ -192,7 +192,7 @@ df = pd.DataFrame({"image_path": image_paths, "label": labels})
 
 
 if ENABLE_PLOTS:
-    plotter = plot_utils.PlotUtils(logger=logger, save_dir="plots", identifier=IDENTIFIER, save=SAVE_PLOTS, show=SHOW_PLOTS)
+    plotter = plot_utils.PlotUtils(logger=logger, save_dir=out_dir, identifier=IDENTIFIER, save=SAVE_PLOTS, show=SHOW_PLOTS)
     plotter.plot_label_distribution(df)
     plotter.plot_sample_images(df, categories, num_images=5)
 
@@ -357,7 +357,10 @@ history = cnn_model.fit(
 )
 
 if SAVE_BEST_MODEL:
-    model_save_path = f"models/knee_osteo_model_{current_time}.keras"
+    out_dir = f"out/{IDENTIFIER}"
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+    model_save_path = f"{out_dir}/knee_osteo_model_{IDENTIFIER}.keras"
     cnn_model.save(model_save_path)
     logger.info(f"Model saved as {model_save_path}")
     # Convert the model to Core ML format if on macOS

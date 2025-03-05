@@ -7,7 +7,7 @@ import os
 
 
 class PlotUtils:
-    def __init__(self, logger=None, save_dir="plots", identifier=None, save=False, show=False):
+    def __init__(self, logger=None, save_dir="out", identifier=None, save=False, show=False):
         """Initialize with optional parameters for saving, showing plots, and a unique identifier."""
         self.save_dir = save_dir
         self.identifier = identifier
@@ -22,7 +22,7 @@ class PlotUtils:
             print("Identifier not set. Please provide one during initialization or when calling methods.")
             return
         
-        full_path = os.path.join(self.save_dir, self.identifier)
+        full_path = os.path.join(self.save_dir, self.identifier) # out/{identifier}
         if not os.path.exists(full_path):
             os.makedirs(full_path)
         save_path = os.path.join(full_path, f"{plot_name}_{self.identifier}.png")
