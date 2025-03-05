@@ -174,10 +174,6 @@ if gpus:
 else:
     logger.info("No GPU found. Running on CPU.")
 
-# Stopping here to test logger
-logger.info("Stopping here to test logger")
-exit()
-
 data_path = "images/Knee_Osteoarthritis_Classification"  # Extracted Camino zip file
 categories = ["Normal", "Osteopenia", "Osteoporosis"]
 image_paths = []
