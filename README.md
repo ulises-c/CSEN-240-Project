@@ -37,8 +37,8 @@ Not in any particular order
 
 ### How to run
 Use the `Makefile` which utilizes `helper_tools/requirements.txt` to create a consistent python environment across machines
-1. Extract `Knee_Osteoarthritis_Classification_Camino.zip` to `images/Knee_Osteoarthritis_Classification_Camino`
-2. In the terminal with the project directory open enter the following
+1. Clone the repo
+2. In the terminal, with the project directory open, enter the following command
    1. `make run`
    2. `out/` will contain output data from model training, such as the following:
       1. logs
