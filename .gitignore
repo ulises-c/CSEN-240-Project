@@ -174,10 +174,16 @@ cython_debug/
 .DS_Store
 
 # Large Files
-*.zip
+# *.zip
 
 # Images
 images/
+
+# Models
+models/
+
+# Logs
+logs/
 
 # Virtual environments
 .python-version
