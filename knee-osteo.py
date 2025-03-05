@@ -14,11 +14,14 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 import warnings
 import platform
+import logging
 
+from datetime import datetime
 from imblearn.over_sampling import RandomOverSampler
 from PIL import Image
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import confusion_matrix, classification_report
+from sklearn.metrics import confusion_matrix, classification_report, accuracy_score
+from sklearn.utils import shuffle
 from sklearn.preprocessing import LabelEncoder
 from tensorflow import keras
 from tensorflow.keras.models import Sequential, Model
@@ -46,25 +49,44 @@ from tensorflow.keras.layers import (
     Reshape,
 )
 
-# Check the operating system
+# TODO: Add support for mixed precision training
+# TODO: Add support for sklearn.utils shuffle
+# TODO: Add support for sklearn.utils resample
+# TODO: Add support for sklearn.metrics accuracy_score
+# TODO: Add support for logging
+
+# Check if logs directory exists, create if not
+log_dir = 'logs'
+if not os.path.exists(log_dir):
+    os.makedirs(log_dir)
+
+# Generate log file name with ISO format date-time and system platform
+current_time = datetime.now().isoformat(timespec='seconds')
 system_platform = platform.system()
+log_file_name = f"{log_dir}/knee_osteo_{current_time}_{system_platform}.log"
+
+# Configure logging to write to the generated log file
+logging.basicConfig(level=logging.INFO, filename=log_file_name, filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+# Check the operating system
 if system_platform == "Darwin":  # macOS
     import coremltools
-    print("Running on macOS. Checking for Apple GPU (Metal) support...")
+    logger.info("Running on macOS. Checking for Apple GPU (Metal) support...")
     
     # Enable Metal backend for Apple Silicon
     if tf.config.list_physical_devices("GPU"):
         try:
             for gpu in tf.config.list_physical_devices("GPU"):
                 tf.config.experimental.set_memory_growth(gpu, True)
-            print("Using Metal backend for acceleration on Apple Silicon")
+            logger.info("Using Metal backend for acceleration on Apple Silicon")
         except RuntimeError as e:
-            print(e)
+            logger.error(e)
     else:
-        print("No GPU found. Running on CPU.")
+        logger.info("No GPU found. Running on CPU.")
 
 elif system_platform == "Linux":  # Linux (Nvidia GPUs)
-    print("Running on Linux. Checking for CUDA support...")
+    logger.info("Running on Linux. Checking for CUDA support...")
     
     # Enable CUDA backend for Nvidia GPUs
     gpus = tf.config.list_physical_devices("GPU")
@@ -72,11 +94,11 @@ elif system_platform == "Linux":  # Linux (Nvidia GPUs)
         try:
             for gpu in gpus:
                 tf.config.experimental.set_memory_growth(gpu, True)
-            print("Using CUDA for acceleration on Nvidia GPU")
+            logger.info("Using CUDA for acceleration on Nvidia GPU")
         except RuntimeError as e:
-            print(e)
+            logger.error(e)
     else:
-        print("No GPU found. Running on CPU.")
+        logger.info("No GPU found. Running on CPU.")
 
 # data_path = "images/Knee_Osteoarthritis_Classification_Original" # Causing issues currently
 # data_path = "images/Knee_Osteoarthritis_Classification"  # Extracted zip file
@@ -100,8 +122,8 @@ df = pd.DataFrame({"image_path": image_paths, "label": labels})
 # print(df.duplicated().sum())
 # print(df.isnull().sum())
 # print(df.info())
-# print("Unique labels: {}".format(df["label"].unique()))
-# print("Label counts: {}".format(df["label"].value_counts()))
+# logger.info("Unique labels: {}".format(df["label"].unique()))
+# logger.info("Label counts: {}".format(df["label"].value_counts()))
 
 
 sns.set_style("whitegrid")
@@ -167,7 +189,7 @@ ros = RandomOverSampler(random_state=42)
 X_resampled, y_resampled = ros.fit_resample(df[["image_path"]], df["category_encoded"])
 df_resampled = pd.DataFrame(X_resampled, columns=["image_path"])
 df_resampled["category_encoded"] = y_resampled
-# print("\nClass distribution after oversampling:")
+# logger.info("\nClass distribution after oversampling:")
 # print(df_resampled["category_encoded"].value_counts())
 # print(df_resampled)
 
@@ -245,18 +267,17 @@ if gpus:
     try:
         for gpu in gpus:
             tf.config.experimental.set_memory_growth(gpu, True)
-        print("GPU memory growth set to True")
+        logger.info("GPU memory growth set to True")
     except RuntimeError as e:
         print(e)
 else:
-    print("No GPU available")
+    logger.info("No GPU available")
 
 
 # Set up early stopping callback
 early_stopping = EarlyStopping(
     monitor="val_loss", patience=5, restore_best_weights=True
 )
-
 
 def create_xception_model(input_shape, num_classes=8, learning_rate=1e-4):
     inputs = Input(shape=input_shape, name="Input_Layer")
@@ -292,7 +313,8 @@ history = cnn_model.fit(
     train_gen_new,
     validation_data=valid_gen_new,
     epochs=250,
-    callbacks=[early_stopping],
+    # Disabling early stopping for now
+    # callbacks=[early_stopping], 
     verbose=1,
 )
 
@@ -363,4 +385,36 @@ conf_matrix = confusion_matrix(test_labels, predicted_classes)
 # # plt.pause(5)
 # # plt.close()
 
-print("--- END ---")
+# Saves model, optimized for macOS neural engine
+"""
+# Convert the model to Core ML format if on macOS
+if system_platform == "Darwin":  # macOS
+    import coremltools as ct
+
+    logger.info("Converting TensorFlow model to Core ML format for Apple Neural Engine...")
+
+    # Convert the trained model to Core ML format
+    model_input = ct.ImageType(shape=(1, 224, 224, 3))  # Adjust input shape as needed
+
+    coreml_model = ct.convert(
+        cnn_model,  # Your trained TensorFlow/Keras model
+        inputs=[model_input],
+        compute_units=ct.ComputeUnit.ALL,  # Use ALL to leverage CPU, GPU, and Neural Engine
+    )
+
+    # Save the Core ML model
+    coreml_model_path = "model.mlmodel"
+    coreml_model.save(coreml_model_path)
+
+    logger.info(f"Core ML model saved as {coreml_model_path}")
+
+    # Optional: Load and test the Core ML model
+    logger.info("Loading Core ML model for inference...")
+    import coremltools.models
+
+    loaded_model = coremltools.models.MLModel(coreml_model_path)
+
+    logger.info("Core ML model loaded successfully! Ready for Neural Engine acceleration.")
+    """
+
+logger.info("--- END ---")
