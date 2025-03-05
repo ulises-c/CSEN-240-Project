@@ -37,6 +37,6 @@ clean:
 setup: install
 	@echo "Python environment setup is complete!"
 
-run: 
+run: install
 	@echo "Running $(PY_FILE), using Python version: $$(pyenv which python)"  # Check which Python is being used
 	$(VENV_NAME)/bin/python knee-osteo.py

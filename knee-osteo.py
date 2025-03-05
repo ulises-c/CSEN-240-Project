@@ -13,6 +13,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import tensorflow as tf
 import warnings
+import platform
 
 from imblearn.over_sampling import RandomOverSampler
 from PIL import Image
@@ -26,6 +27,7 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras import regularizers, layers, models
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from tensorflow.keras.applications import Xception
+# from tensorflow.keras.mixed_precision import experimental as mixed_precision # may be useful for training on Apple Silicon or Nvidia GPUs with less VRAM
 from tensorflow.keras.layers import (
     Conv2D,
     MaxPooling2D,
@@ -44,9 +46,41 @@ from tensorflow.keras.layers import (
     Reshape,
 )
 
+# Check the operating system
+system_platform = platform.system()
+if system_platform == "Darwin":  # macOS
+    import coremltools
+    print("Running on macOS. Checking for Apple GPU (Metal) support...")
+    
+    # Enable Metal backend for Apple Silicon
+    if tf.config.list_physical_devices("GPU"):
+        try:
+            for gpu in tf.config.list_physical_devices("GPU"):
+                tf.config.experimental.set_memory_growth(gpu, True)
+            print("Using Metal backend for acceleration on Apple Silicon")
+        except RuntimeError as e:
+            print(e)
+    else:
+        print("No GPU found. Running on CPU.")
+
+elif system_platform == "Linux":  # Linux (Nvidia GPUs)
+    print("Running on Linux. Checking for CUDA support...")
+    
+    # Enable CUDA backend for Nvidia GPUs
+    gpus = tf.config.list_physical_devices("GPU")
+    if gpus:
+        try:
+            for gpu in gpus:
+                tf.config.experimental.set_memory_growth(gpu, True)
+            print("Using CUDA for acceleration on Nvidia GPU")
+        except RuntimeError as e:
+            print(e)
+    else:
+        print("No GPU found. Running on CPU.")
 
 # data_path = "images/Knee_Osteoarthritis_Classification_Original" # Causing issues currently
-data_path = "images/Knee_Osteoarthritis_Classification"  # Extracted zip file
+# data_path = "images/Knee_Osteoarthritis_Classification"  # Extracted zip file
+data_path = "images/Knee_Osteoarthritis_Classification_Camino"  # Extracted zip file
 
 categories = ["Normal", "Osteopenia", "Osteoporosis"]
 

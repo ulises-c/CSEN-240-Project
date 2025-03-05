@@ -14,6 +14,7 @@ Pillow
 # For macOS (specifically Apple Silicon)
 tensorflow-macos; sys_platform == "darwin"
 tensorflow-metal; sys_platform == "darwin"
+coremltools; sys_platform == "darwin"
 
 # For PCs with Nvidia GPUs
 tensorflow[and-cuda]; sys_platform == "linux" or sys_platform == "win32"  # For Nvidia GPUs
