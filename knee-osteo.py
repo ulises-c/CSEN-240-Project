@@ -16,6 +16,7 @@ import utils.plot_utils as plot_utils # Custom module that has plotting function
 import json # To load hyperparameters from a JSON file, also used to save model history
 import random # To set random seed for reproducibility
 
+from utils.system_specs_util import log_system_specs # Custom module that has system specs logging function
 from datetime import datetime
 from imblearn.over_sampling import RandomOverSampler
 from PIL import Image
@@ -152,8 +153,7 @@ except Exception as e:
 gpus = tf.config.list_physical_devices("GPU")
 logger.info("--- START ---")
 logger.info(f"Start Time: {current_time}")
-logger.info(f"System Platform: {system_platform}")
-logger.info(f"GPU Available: {gpus}")
+log_system_specs(logger, gpus)
 logger.info(f"--- config.json ---")
 for key, value in config.items():
     logger.info(f"{key}: {value}")
@@ -173,6 +173,10 @@ if gpus:
         logger.error(e)
 else:
     logger.info("No GPU found. Running on CPU.")
+
+# Stopping here to test logger
+logger.info("Stopping here to test logger")
+exit()
 
 data_path = "images/Knee_Osteoarthritis_Classification"  # Extracted Camino zip file
 categories = ["Normal", "Osteopenia", "Osteoporosis"]

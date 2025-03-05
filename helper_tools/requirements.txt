@@ -9,6 +9,8 @@ opencv-python
 scikit-learn
 imbalanced-learn
 Pillow
+psutil
+GPUtil
 
 # TensorFlow - Install based on platform
 # For macOS (specifically Apple Silicon)
