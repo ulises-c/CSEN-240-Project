@@ -8,13 +8,13 @@ import time
 import shutil
 import pathlib
 import itertools
-import cv2
-import seaborn as sns
-import matplotlib.pyplot as plt
 import tensorflow as tf
 import warnings
 import platform
 import logging
+import plot_utils # Custom module that has plotting functions
+import json # To load hyperparameters from a JSON file, also used to save model history
+import random # To set random seed for reproducibility
 
 from datetime import datetime
 from imblearn.over_sampling import RandomOverSampler
@@ -28,9 +28,10 @@ from tensorflow.keras.models import Sequential, Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras import regularizers, layers, models
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, LambdaCallback
 from tensorflow.keras.applications import Xception
 # from tensorflow.keras.mixed_precision import experimental as mixed_precision # may be useful for training on Apple Silicon or Nvidia GPUs with less VRAM
+from tensorflow.keras import mixed_precision # may be useful for training on Apple Silicon or Nvidia GPUs with less VRAM
 from tensorflow.keras.layers import (
     Conv2D,
     MaxPooling2D,
@@ -54,6 +55,55 @@ from tensorflow.keras.layers import (
 # TODO: Add support for sklearn.utils resample
 # TODO: Add support for sklearn.metrics accuracy_score
 # TODO: Add support for logging
+# TODO: Checkout Tensorflow Logging
+# TODO: Checkout Tensorboard
+
+start_time = time.perf_counter()
+
+# Load hyperparameters from a JSON file
+with open("hyperparameters.json", "r") as f:
+    hyperparameters = json.load(f)
+
+ENABLE_PLOTS = hyperparameters["enable_plots"]
+ENABLE_TF_DETERMINISM = hyperparameters["enable_tf_determinism"]
+SAVE_BEST_MODEL = hyperparameters["save_best_model"]
+CONVERT_TO_COREML = hyperparameters["convert_to_coreml"]
+RANDOM_SEED = hyperparameters["random_seed"]
+BATCH_SIZE = hyperparameters["batch_size"] # reducing may help with VRAM issues, but may also reduce accuracy, original was 16
+IMG_SIZE = tuple(hyperparameters["img_size"])
+CHANNELS = hyperparameters["channels"]
+LEARNING_RATE = hyperparameters["learning_rate"]
+NUM_CLASSES = hyperparameters["num_classes"]
+EPOCHS = hyperparameters["epochs"]
+EARLY_STOPPING_PATIENCE = hyperparameters["early_stopping_patience"]
+DROPOUT_RATE = hyperparameters["dropout_rate"]
+GAUSSIAN_NOISE_STDDEV = hyperparameters["gaussian_noise_stddev"]
+NUM_ATTENTION_HEADS = hyperparameters["num_attention_heads"]
+ATTENTION_KEY_DIM = hyperparameters["attention_key_dim"] # Based on the number of channels in the input (3 in this case for RGB)
+TRAIN_SPLIT = hyperparameters["train_split"]
+VALID_TEST_SPLIT = hyperparameters["valid_test_split"]
+ENABLE_MIXED_PRECISION = hyperparameters["enable_mixed_precision"]
+USE_EARLY_STOPPING = hyperparameters["use_early_stopping"]
+OPTIMIZER = hyperparameters["optimizer"]
+LOSS_FUNCTION = hyperparameters["loss_function"]
+METRICS = hyperparameters["metrics"]
+AUGMENTATION = hyperparameters["augmentation"]
+
+# Set random seed for reproducibility, requires ENABLE_TF_DETERMINISM to be set to True
+random.seed(RANDOM_SEED)
+np.random.seed(RANDOM_SEED)
+tf.random.set_seed(RANDOM_SEED)
+tf.keras.utils.set_random_seed(RANDOM_SEED)
+os.environ["PYTHONHASHSEED"] = str(RANDOM_SEED)
+
+# Setup  Tensorflow determinism
+if ENABLE_TF_DETERMINISM:
+    tf.config.experimental.enable_op_determinism()
+
+# Set up mixed precision training if enabled
+if ENABLE_MIXED_PRECISION:
+    policy = mixed_precision.Policy("mixed_float16")
+    mixed_precision.set_global_policy(policy)
 
 # Check if logs directory exists, create if not
 log_dir = 'logs'
@@ -69,43 +119,36 @@ log_file_name = f"{log_dir}/knee_osteo_{current_time}_{system_platform}.log"
 logging.basicConfig(level=logging.INFO, filename=log_file_name, filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Check the operating system
-if system_platform == "Darwin":  # macOS
-    import coremltools
-    logger.info("Running on macOS. Checking for Apple GPU (Metal) support...")
-    
-    # Enable Metal backend for Apple Silicon
-    if tf.config.list_physical_devices("GPU"):
-        try:
-            for gpu in tf.config.list_physical_devices("GPU"):
-                tf.config.experimental.set_memory_growth(gpu, True)
-            logger.info("Using Metal backend for acceleration on Apple Silicon")
-        except RuntimeError as e:
-            logger.error(e)
-    else:
-        logger.info("No GPU found. Running on CPU.")
+### Log important information
+gpus = tf.config.list_physical_devices("GPU")
+logger.info("--- START ---")
+logger.info(f"Start Time: {current_time}")
+logger.info(f"System Platform: {system_platform}")
+logger.info(f"GPU Available: {gpus}")
+logger.info(f"--- Hyperparameters Start ---")
+for key, value in hyperparameters.items():
+    logger.info(f"{key}: {value}")
+logger.info(f"--- Hyperparameters End ---")
 
-elif system_platform == "Linux":  # Linux (Nvidia GPUs)
-    logger.info("Running on Linux. Checking for CUDA support...")
-    
-    # Enable CUDA backend for Nvidia GPUs
-    gpus = tf.config.list_physical_devices("GPU")
-    if gpus:
-        try:
-            for gpu in gpus:
-                tf.config.experimental.set_memory_growth(gpu, True)
+# Enable GPU acceleration if available
+if gpus:
+    try:
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+        if system_platform == "Linux":
             logger.info("Using CUDA for acceleration on Nvidia GPU")
-        except RuntimeError as e:
-            logger.error(e)
-    else:
-        logger.info("No GPU found. Running on CPU.")
+        elif system_platform == "Darwin": # macOS
+            logger.info("Using Metal backend for acceleration on Apple Silicon")
+
+    except RuntimeError as e:
+        logger.error(e)
+else:
+    logger.info("No GPU found. Running on CPU.")
 
 # data_path = "images/Knee_Osteoarthritis_Classification_Original" # Causing issues currently
 # data_path = "images/Knee_Osteoarthritis_Classification"  # Extracted zip file
 data_path = "images/Knee_Osteoarthritis_Classification_Camino"  # Extracted zip file
-
 categories = ["Normal", "Osteopenia", "Osteoporosis"]
-
 image_paths = []
 labels = []
 
@@ -128,57 +171,9 @@ df = pd.DataFrame({"image_path": image_paths, "label": labels})
 
 sns.set_style("whitegrid")
 
-"""Hiding plots for now"""
-# fig, ax = plt.subplots(figsize=(8, 6))
-# sns.countplot(data=df, x="label", palette="viridis", ax=ax)
-# ax.set_title("Distribution of Tumor Types", fontsize=14, fontweight="bold")
-# ax.set_xlabel("Tumor Type", fontsize=12)
-# ax.set_ylabel("Count", fontsize=12)
-# for p in ax.patches:
-#     ax.annotate(
-#         f"{int(p.get_height())}",
-#         (p.get_x() + p.get_width() / 2.0, p.get_height()),
-#         ha="center",
-#         va="bottom",
-#         fontsize=11,
-#         color="black",
-#         xytext=(0, 5),
-#         textcoords="offset points",
-#     )
-# # plt.show()
-# label_counts = df["label"].value_counts()
-# fig, ax = plt.subplots(figsize=(8, 6))
-# colors = sns.color_palette("viridis", len(label_counts))
-# ax.pie(
-#     label_counts,
-#     labels=label_counts.index,
-#     autopct="%1.1f%%",
-#     startangle=140,
-#     colors=colors,
-#     textprops={"fontsize": 12, "weight": "bold"},
-#     wedgeprops={"edgecolor": "black", "linewidth": 1},
-# )
-# ax.set_title("Distribution of Tumor Types - Pie Chart", fontsize=14, fontweight="bold")
-# # plt.show()
-# num_images = 5
-# plt.figure(figsize=(15, 12))
-# for i, category in enumerate(categories):
-#     category_images = df[df["label"] == category]["image_path"].iloc[:num_images]
-#     for j, img_path in enumerate(category_images):
-#         img = cv2.imread(img_path)
-#         if img is None:
-#             print(f"Error loading image: {img_path}")
-#             continue
-#         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-#         plt.subplot(len(categories), num_images, i * num_images + j + 1)
-#         plt.imshow(img)
-#         plt.axis("off")
-#         plt.title(category)
-# plt.tight_layout()
-# plt.show(block=False)
-# plt.pause(5)
-# plt.close()
-
+if ENABLE_PLOTS:
+    plot_utils.plot_label_distribution(df)
+    plot_utils.plot_sample_images(df, categories, num_images=5)
 
 label_encoder = LabelEncoder()
 df["category_encoded"] = label_encoder.fit_transform(df["label"])
@@ -205,7 +200,7 @@ train_df_new, temp_df_new = train_test_split(
     df_resampled,
     train_size=0.8,
     shuffle=True,
-    random_state=42,
+    random_state=RANDOM_SEED,
     stratify=df_resampled["category_encoded"],
 )
 # print(train_df_new.shape)
@@ -216,68 +211,75 @@ valid_df_new, test_df_new = train_test_split(
     temp_df_new,
     test_size=0.5,
     shuffle=True,
-    random_state=42,
+    random_state=RANDOM_SEED,
     stratify=temp_df_new["category_encoded"],
 )
 # print(valid_df_new.shape)
 # print(test_df_new.shape)
 
+# Train data generator (with augmentation)
+train_data_gen = ImageDataGenerator(
+    rescale=1.0 / 255,
+    rotation_range=AUGMENTATION["rotation_range"],
+    width_shift_range=AUGMENTATION["width_shift_range"],
+    height_shift_range=AUGMENTATION["height_shift_range"],
+    shear_range=AUGMENTATION["shear_range"],
+    zoom_range=AUGMENTATION["zoom_range"],
+    horizontal_flip=AUGMENTATION["horizontal_flip"],
+    vertical_flip=AUGMENTATION["vertical_flip"],
+    fill_mode=AUGMENTATION["fill_mode"],
+)
 
-batch_size = 8  # reducing may help with VRAM issues, but may also reduce accuracy, original was 16
-img_size = (224, 224)
-channels = 3
-img_shape = (img_size[0], img_size[1], channels)
-tr_gen = ImageDataGenerator(rescale=1.0 / 255)
-ts_gen = ImageDataGenerator(rescale=1.0 / 255)
+# Validation and test data generators (no augmentation)
+valid_test_data_gen = ImageDataGenerator(rescale=1.0 / 255)
 
-train_gen_new = tr_gen.flow_from_dataframe(
+# Data generators for training, validation, and testing
+train_gen_new = train_data_gen.flow_from_dataframe(
     train_df_new,
     x_col="image_path",
     y_col="category_encoded",
-    target_size=img_size,
+    target_size=IMG_SIZE,
     class_mode="sparse",
     color_mode="rgb",
     shuffle=True,
-    batch_size=batch_size,
+    batch_size=BATCH_SIZE,
 )
-valid_gen_new = ts_gen.flow_from_dataframe(
+valid_gen_new = valid_test_data_gen.flow_from_dataframe(
     valid_df_new,
     x_col="image_path",
     y_col="category_encoded",
-    target_size=img_size,
+    target_size=IMG_SIZE,
     class_mode="sparse",
     color_mode="rgb",
     shuffle=True,
-    batch_size=batch_size,
+    batch_size=BATCH_SIZE,
 )
-test_gen_new = ts_gen.flow_from_dataframe(
+test_gen_new = valid_test_data_gen.flow_from_dataframe(
     test_df_new,
     x_col="image_path",
     y_col="category_encoded",
-    target_size=img_size,
+    target_size=IMG_SIZE,
     class_mode="sparse",
     color_mode="rgb",
     shuffle=False,
-    batch_size=batch_size,
+    batch_size=BATCH_SIZE,
 )
 
-gpus = tf.config.list_physical_devices("GPU")
-print(f"Num GPUs Available: {len(gpus)}")
-if gpus:
-    try:
-        for gpu in gpus:
-            tf.config.experimental.set_memory_growth(gpu, True)
-        logger.info("GPU memory growth set to True")
-    except RuntimeError as e:
-        print(e)
-else:
-    logger.info("No GPU available")
-
-
-# Set up early stopping callback
+# Set up early stopping callback, higher patience may result in better accuracy
 early_stopping = EarlyStopping(
-    monitor="val_loss", patience=5, restore_best_weights=True
+    monitor="val_loss", patience=2, restore_best_weights=True
 )
+
+def log_epoch_data(epoch, logs):
+    logger.info(f"Epoch {epoch + 1} | Loss: {logs['loss']:.4f} | Accuracy: {logs['accuracy']:.4f} | Val Loss: {logs['val_loss']:.4f} | Val Accuracy: {logs['val_accuracy']:.4f}")
+
+# Set up Lambda callback to log epoch data
+log_epoch_callback = LambdaCallback(on_epoch_end=log_epoch_data)
+
+# Setup callbacks
+callbacks = [log_epoch_callback]
+if USE_EARLY_STOPPING:
+    callbacks.append(early_stopping)
 
 def create_xception_model(input_shape, num_classes=8, learning_rate=1e-4):
     inputs = Input(shape=input_shape, name="Input_Layer")
@@ -286,37 +288,46 @@ def create_xception_model(input_shape, num_classes=8, learning_rate=1e-4):
     x = base_model.output
     height, width, channels = x.shape[1], x.shape[2], x.shape[3]
     x = Reshape((height * width, channels), name="Reshape_to_Sequence")(x)
-    x = MultiHeadAttention(num_heads=8, key_dim=channels, name="Multi_Head_Attention")(
+    x = MultiHeadAttention(num_heads=NUM_ATTENTION_HEADS, key_dim=ATTENTION_KEY_DIM, name="Multi_Head_Attention")(
         x, x
     )
     x = Reshape((height, width, channels), name="Reshape_to_Spatial")(x)
-    x = GaussianNoise(0.25, name="Gaussian_Noise")(x)
+    x = GaussianNoise(GAUSSIAN_NOISE_STDDEV, name="Gaussian_Noise")(x)
     x = GlobalAveragePooling2D(name="Global_Avg_Pooling")(x)
     x = Dense(512, activation="relu", name="FC_512")(x)
     x = BatchNormalization(name="Batch_Normalization")(x)
-    x = Dropout(0.25, name="Dropout")(x)
+    x = Dropout(DROPOUT_RATE, name="Dropout")(x)
     outputs = Dense(num_classes, activation="softmax", name="Output_Layer")(x)
     model = Model(inputs=inputs, outputs=outputs, name="Xception_with_Attention")
     model.compile(
         optimizer=Adam(learning_rate=learning_rate),
-        loss="sparse_categorical_crossentropy",
-        metrics=["accuracy"],
+        loss=LOSS_FUNCTION,
+        metrics=METRICS,
     )
     return model
 
-
-input_shape = (224, 224, 3)
-cnn_model = create_xception_model(input_shape, num_classes=3, learning_rate=1e-4)
-
+img_shape = (IMG_SIZE[0], IMG_SIZE[1], CHANNELS)
+cnn_model = create_xception_model(img_shape, num_classes=NUM_CLASSES, learning_rate=LEARNING_RATE)
 
 history = cnn_model.fit(
     train_gen_new,
     validation_data=valid_gen_new,
-    epochs=250,
-    # Disabling early stopping for now
-    # callbacks=[early_stopping], 
+    epochs=EPOCHS,
+    callbacks=callbacks,
     verbose=1,
 )
+
+
+if SAVE_BEST_MODEL:
+    model_save_path = f"models/knee_osteo_model_{current_time}.keras"
+    cnn_model.save(model_save_path)
+    logger.info(f"Model saved as {model_save_path}")
+    # Convert the model to Core ML format if on macOS
+    if CONVERT_TO_COREML and system_platform == "Darwin":
+        from coreml_util import convert_to_coreml # Custom module that has CoreML conversion function
+        convert_to_coreml(cnn_model, logger)
+else:
+    logger.info("Model not saved. Set SAVE_BEST_MODEL to True to save the model.")
 
 y_pred = cnn_model.predict(valid_gen_new)
 y_true = valid_gen_new.labels
@@ -324,7 +335,14 @@ y_true = valid_gen_new.labels
 
 def ppo_loss(y_true, y_pred):
     epsilon = 0.2
+    # Ensure the types of both tensors are compatible, casting to float32
     y_true_one_hot = tf.one_hot(tf.cast(y_true, tf.int32), depth=tf.shape(y_pred)[-1])
+    
+    if ENABLE_MIXED_PRECISION:
+        # Ensure both tensors are of the same type
+        y_pred = tf.cast(y_pred, tf.float32)
+        y_true_one_hot = tf.cast(y_true_one_hot, tf.float32)
+    
     selected_probs = tf.reduce_sum(y_pred * y_true_one_hot, axis=-1)
     old_selected_probs = tf.reduce_sum(
         tf.stop_gradient(y_pred) * y_true_one_hot, axis=-1
@@ -338,25 +356,6 @@ def ppo_loss(y_true, y_pred):
 ppo_loss_value = ppo_loss(y_true, y_pred)
 print(f"\nPPO Loss on Validation Data: {ppo_loss_value.numpy()}")
 
-# # Accuracy plot
-# plt.plot(history.history["accuracy"])
-# plt.plot(history.history["val_accuracy"])
-# plt.title("Model accuracy")
-# plt.ylabel("Accuracy")
-# plt.xlabel("Epoch")
-# plt.legend(["Train", "Validation"], loc="upper left")
-# plt.show()
-# # Loss plot
-# plt.plot(history.history["loss"])
-# plt.plot(history.history["val_loss"])
-# plt.title("Model loss")
-# plt.ylabel("Loss")
-# plt.xlabel("Epoch")
-# plt.legend(["Train", "Validation"], loc="upper left")
-# plt.show(block=False)
-# # plt.pause(5)
-# # plt.close()
-
 test_labels = test_gen_new.classes
 predictions = cnn_model.predict(test_gen_new)
 predicted_classes = np.argmax(predictions, axis=1)
@@ -368,53 +367,12 @@ print(report)
 
 conf_matrix = confusion_matrix(test_labels, predicted_classes)
 
-# # Confusion matrix plot
-# plt.figure(figsize=(10, 8))
-# sns.heatmap(
-#     conf_matrix,
-#     annot=True,
-#     fmt="d",
-#     cmap="Blues",
-#     xticklabels=list(test_gen_new.class_indices.keys()),
-#     yticklabels=list(test_gen_new.class_indices.keys()),
-# )
-# plt.title("Confusion Matrix")
-# plt.xlabel("Predicted Label")
-# plt.ylabel("True Label")
-# plt.show(block=False)
-# # plt.pause(5)
-# # plt.close()
+if ENABLE_PLOTS:
+    plot_utils.plot_training_history(history)
+    plot_utils.plot_confusion_matrix(conf_matrix, list(test_gen_new.class_indices.keys()))
 
-# Saves model, optimized for macOS neural engine
-"""
-# Convert the model to Core ML format if on macOS
-if system_platform == "Darwin":  # macOS
-    import coremltools as ct
-
-    logger.info("Converting TensorFlow model to Core ML format for Apple Neural Engine...")
-
-    # Convert the trained model to Core ML format
-    model_input = ct.ImageType(shape=(1, 224, 224, 3))  # Adjust input shape as needed
-
-    coreml_model = ct.convert(
-        cnn_model,  # Your trained TensorFlow/Keras model
-        inputs=[model_input],
-        compute_units=ct.ComputeUnit.ALL,  # Use ALL to leverage CPU, GPU, and Neural Engine
-    )
-
-    # Save the Core ML model
-    coreml_model_path = "model.mlmodel"
-    coreml_model.save(coreml_model_path)
-
-    logger.info(f"Core ML model saved as {coreml_model_path}")
-
-    # Optional: Load and test the Core ML model
-    logger.info("Loading Core ML model for inference...")
-    import coremltools.models
-
-    loaded_model = coremltools.models.MLModel(coreml_model_path)
-
-    logger.info("Core ML model loaded successfully! Ready for Neural Engine acceleration.")
-    """
+end_time = time.perf_counter()
+execution_time = end_time - start_time
+logger.info(f"Execution time: {execution_time:.2f} seconds")
 
 logger.info("--- END ---")
