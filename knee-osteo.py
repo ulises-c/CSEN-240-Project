@@ -403,7 +403,7 @@ predicted_classes = np.argmax(predictions, axis=1)
 report = classification_report(
     test_labels, predicted_classes, target_names=list(test_gen_new.class_indices.keys())
 )
-logger.info(report)
+logger.info(f"Classification Report:\n{report}")
 
 conf_matrix = confusion_matrix(test_labels, predicted_classes)
 
@@ -411,15 +411,15 @@ if ENABLE_PLOTS:
     plotter.plot_training_history(history)
     plotter.plot_confusion_matrix(conf_matrix, class_names=list(test_gen_new.class_indices.keys()))
 
-def convert_perf_time(perf_time:float) -> str:
+def exec_time(end_time:float) -> str:
     # Convert performance time to hours, minutes, and seconds
-    # Return ISO formatted time string
+    perf_time = end_time - start_time
     hours = perf_time // 3600
     minutes = (perf_time % 3600) // 60
     seconds = perf_time % 60
     milliseconds = (seconds - int(seconds)) * 1000
-    return f"{int(hours):02}:{int(minutes):02}:{int(seconds):02}.{int(milliseconds):03}"
+    exec_time_str = f"{int(hours):02} H {int(minutes):02} M {int(seconds):02}.{int(milliseconds):03} S"
+    logger.info(f"Execution Time: {exec_time_str}")
 
-execution_time = convert_perf_time(time.perf_counter() - start_time)
-logger.info(f"Execution time: {execution_time} seconds")
+execution_time = exec_time(time.perf_counter())
 logger.info("--- END ---")
