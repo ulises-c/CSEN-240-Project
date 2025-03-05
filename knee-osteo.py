@@ -141,6 +141,14 @@ formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 console.setFormatter(formatter)
 logger.addHandler(console)
 
+# Store copy of config.json in the output directory
+json_copy_name = f"{out_full_path}/config_{IDENTIFIER}.json"
+try:
+    shutil.copy("config.json", json_copy_name)
+    logger.info(f"config.json copied to {json_copy_name}")
+except Exception as e:
+    logger.error(f"Error copying config.json to {json_copy_name}: {e}")
+
 ### Log important information
 gpus = tf.config.list_physical_devices("GPU")
 logger.info("--- START ---")
