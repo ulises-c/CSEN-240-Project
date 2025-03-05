@@ -11,6 +11,8 @@ PYTHON_VERSION = 3.11
 PYENV = pyenv
 INSTALL = pip install -r helper_tools/requirements.txt
 PY_FILE = knee-osteo.py
+ZIP_FILE = Knee_Osteoarthritis_Classification_Camino.zip
+EXTRACT_DIR = images/
 
 install-python:
 	@echo "Installing Python $(PYTHON_VERSION) using pyenv..."
@@ -27,16 +29,22 @@ install: create-venv
 	$(VENV_NAME)/bin/pip install --upgrade pip
 	$(VENV_NAME)/bin/$(INSTALL)
 
+extract-images:
+	@echo "Extracting $(ZIP_FILE) to $(EXTRACT_DIR)..."
+	@mkdir -p $(EXTRACT_DIR)
+	@unzip -n $(ZIP_FILE) -d $(EXTRACT_DIR)
+
 activate:
 	@echo "To activate your virtual environment, run:"
 	@echo "source $(VENV_NAME)/bin/activate"
 
 clean:
 	rm -rf $(VENV_NAME)
+	rm -rf $(EXTRACT_DIR)
 
-setup: install
-	@echo "Python environment setup is complete!"
+setup: install extract-images
+	@echo "Python environment setup is complete, and images have been extracted!"
 
-run: install
+run: setup
 	@echo "Running $(PY_FILE), using Python version: $$(pyenv which python)"  # Check which Python is being used
 	$(VENV_NAME)/bin/python knee-osteo.py

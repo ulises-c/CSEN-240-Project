@@ -175,9 +175,7 @@ if gpus:
 else:
     logger.info("No GPU found. Running on CPU.")
 
-# data_path = "images/Knee_Osteoarthritis_Classification_Original" # Causing issues currently
-# data_path = "images/Knee_Osteoarthritis_Classification"  # Extracted zip file
-data_path = "images/Knee_Osteoarthritis_Classification_Camino"  # Extracted zip file
+data_path = "images/Knee_Osteoarthritis_Classification"  # Extracted Camino zip file
 categories = ["Normal", "Osteopenia", "Osteoporosis"]
 image_paths = []
 labels = []
