@@ -3,7 +3,15 @@ import seaborn as sns
 import cv2
 import os
 
-def plot_label_distribution(df):
+def save_plot(plot_name, identifier, save_dir="plots"):
+    """Saves the current plot as a PNG file with a unique identifier."""
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    save_path = os.path.join(save_dir, f"{plot_name}_{identifier}.png")
+    plt.savefig(save_path)
+    print(f"Plot saved at {save_path}")
+
+def plot_label_distribution(df, identifier=None, save=False):
     """Plots the distribution of labels in the dataset."""
     plt.figure(figsize=(8, 6))
     sns.countplot(data=df, x="label", palette="viridis")
@@ -16,9 +24,11 @@ def plot_label_distribution(df):
                            (p.get_x() + p.get_width() / 2., p.get_height()), 
                            ha="center", va="bottom", fontsize=11, color="black", 
                            xytext=(0, 5), textcoords="offset points")
+    if save and identifier:
+        save_plot("label_distribution", identifier)
     plt.show()
 
-def plot_sample_images(df, categories, num_images=5):
+def plot_sample_images(df, categories, num_images=5, identifier=None, save=False):
     """Displays sample images from each category."""
     plt.figure(figsize=(15, 12))
     for i, category in enumerate(categories):
@@ -33,10 +43,12 @@ def plot_sample_images(df, categories, num_images=5):
             plt.imshow(img)
             plt.axis("off")
             plt.title(category)
+    if save and identifier:
+        save_plot("sample_images", identifier)
     plt.tight_layout()
     plt.show()
 
-def plot_training_history(history):
+def plot_training_history(history, identifier=None, save=False):
     """Plots the accuracy and loss curves after training."""
     plt.figure(figsize=(12, 5))
 
@@ -58,9 +70,11 @@ def plot_training_history(history):
     plt.ylabel("Loss")
     plt.legend()
 
+    if save and identifier:
+        save_plot("training_history", identifier)
     plt.show()
 
-def plot_confusion_matrix(conf_matrix, class_names):
+def plot_confusion_matrix(conf_matrix, class_names, identifier=None, save=False):
     """Plots the confusion matrix."""
     plt.figure(figsize=(10, 8))
     sns.heatmap(conf_matrix, annot=True, fmt="d", cmap="Blues",
@@ -68,4 +82,6 @@ def plot_confusion_matrix(conf_matrix, class_names):
     plt.title("Confusion Matrix")
     plt.xlabel("Predicted Label")
     plt.ylabel("True Label")
+    if save and identifier:
+        save_plot("confusion_matrix", identifier)
     plt.show()

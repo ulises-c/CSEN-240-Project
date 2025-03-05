@@ -1,5 +1,6 @@
 {
     "enable_plots": true,
+    "save_plots": true,
     "enable_tf_determinism": false,
     "save_best_model": false,
     "convert_to_coreml": false,
@@ -10,7 +11,7 @@
     "learning_rate": 0.0001,
     "num_classes": 3,
     "epochs": 250,
-    "early_stopping_patience": 50,
+    "early_stopping_patience": 25,
     "dropout_rate": 0.25,
     "gaussian_noise_stddev": 0.25,
     "num_attention_heads": 8,

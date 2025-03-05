@@ -65,6 +65,7 @@ with open("hyperparameters.json", "r") as f:
     hyperparameters = json.load(f)
 
 ENABLE_PLOTS = hyperparameters["enable_plots"]
+SAVE_PLOTS = hyperparameters["save_plots"]
 ENABLE_TF_DETERMINISM = hyperparameters["enable_tf_determinism"]
 SAVE_BEST_MODEL = hyperparameters["save_best_model"]
 CONVERT_TO_COREML = hyperparameters["convert_to_coreml"]
@@ -88,6 +89,7 @@ OPTIMIZER = hyperparameters["optimizer"]
 LOSS_FUNCTION = hyperparameters["loss_function"]
 METRICS = hyperparameters["metrics"]
 AUGMENTATION = hyperparameters["augmentation"]
+
 
 # Set random seed for reproducibility, requires ENABLE_TF_DETERMINISM to be set to True
 random.seed(RANDOM_SEED)
@@ -113,7 +115,8 @@ if not os.path.exists(log_dir):
 # Generate log file name with ISO format date-time and system platform
 current_time = datetime.now().isoformat(timespec='seconds')
 system_platform = platform.system()
-log_file_name = f"{log_dir}/knee_osteo_{current_time}_{system_platform}.log"
+IDENTIFIER = f"{current_time}_{system_platform}"
+log_file_name = f"{log_dir}/knee_osteo_{IDENTIFIER}.log"
 
 # Configure logging to write to the generated log file
 logging.basicConfig(level=logging.INFO, filename=log_file_name, filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
@@ -172,8 +175,8 @@ df = pd.DataFrame({"image_path": image_paths, "label": labels})
 sns.set_style("whitegrid")
 
 if ENABLE_PLOTS:
-    plot_utils.plot_label_distribution(df)
-    plot_utils.plot_sample_images(df, categories, num_images=5)
+    plot_utils.plot_label_distribution(df, identifier=IDENTIFIER, save=SAVE_PLOTS)
+    plot_utils.plot_sample_images(df, categories, num_images=5, identifier=IDENTIFIER, save=SAVE_PLOTS)
 
 label_encoder = LabelEncoder()
 df["category_encoded"] = label_encoder.fit_transform(df["label"])
@@ -206,7 +209,6 @@ train_df_new, temp_df_new = train_test_split(
 # print(train_df_new.shape)
 # print(temp_df_new.shape)
 
-
 valid_df_new, test_df_new = train_test_split(
     temp_df_new,
     test_size=0.5,
@@ -218,6 +220,7 @@ valid_df_new, test_df_new = train_test_split(
 # print(test_df_new.shape)
 
 # Train data generator (with augmentation)
+### NOTE: This may not be allowed within project constraints ###
 train_data_gen = ImageDataGenerator(
     rescale=1.0 / 255,
     rotation_range=AUGMENTATION["rotation_range"],
@@ -265,16 +268,16 @@ test_gen_new = valid_test_data_gen.flow_from_dataframe(
     batch_size=BATCH_SIZE,
 )
 
-# Set up early stopping callback, higher patience may result in better accuracy
-early_stopping = EarlyStopping(
-    monitor="val_loss", patience=2, restore_best_weights=True
-)
-
 def log_epoch_data(epoch, logs):
-    logger.info(f"Epoch {epoch + 1} | Loss: {logs['loss']:.4f} | Accuracy: {logs['accuracy']:.4f} | Val Loss: {logs['val_loss']:.4f} | Val Accuracy: {logs['val_accuracy']:.4f}")
+    logger.info(f"Epoch {epoch + 1:3.0} | Loss: {logs['loss']:.4f} | Accuracy: {logs['accuracy']:.4f} | Val Loss: {logs['val_loss']:.4f} | Val Accuracy: {logs['val_accuracy']:.4f}")
 
 # Set up Lambda callback to log epoch data
 log_epoch_callback = LambdaCallback(on_epoch_end=log_epoch_data)
+
+# Set up early stopping callback, higher patience may result in better accuracy
+early_stopping = EarlyStopping(
+    monitor="val_loss", patience=EARLY_STOPPING_PATIENCE, restore_best_weights=True
+)
 
 # Setup callbacks
 callbacks = [log_epoch_callback]
@@ -316,7 +319,6 @@ history = cnn_model.fit(
     callbacks=callbacks,
     verbose=1,
 )
-
 
 if SAVE_BEST_MODEL:
     model_save_path = f"models/knee_osteo_model_{current_time}.keras"
@@ -368,8 +370,8 @@ print(report)
 conf_matrix = confusion_matrix(test_labels, predicted_classes)
 
 if ENABLE_PLOTS:
-    plot_utils.plot_training_history(history)
-    plot_utils.plot_confusion_matrix(conf_matrix, list(test_gen_new.class_indices.keys()))
+    plot_utils.plot_training_history(history, identifier=IDENTIFIER, save=SAVE_PLOTS)
+    plot_utils.plot_confusion_matrix(conf_matrix, list(test_gen_new.class_indices.keys()), identifier=IDENTIFIER, save=SAVE_PLOTS)
 
 end_time = time.perf_counter()
 execution_time = end_time - start_time
