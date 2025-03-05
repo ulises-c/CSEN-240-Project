@@ -180,8 +180,10 @@ cython_debug/
 images/
 
 # Virtual environments
+.python-version
 tensorflow_env/
 tensorflow_env_new/
 tf_gpu_env/
 py310/
 py312/
+py311/
