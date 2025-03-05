@@ -12,7 +12,7 @@ import tensorflow as tf
 import warnings
 import platform
 import logging
-import plot_utils # Custom module that has plotting functions
+import utils.plot_utils as plot_utils # Custom module that has plotting functions
 import json # To load hyperparameters from a JSON file, also used to save model history
 import random # To set random seed for reproducibility
 
@@ -51,24 +51,23 @@ from tensorflow.keras.layers import (
     Reshape,
 )
 
+# Potential TODOs
 # TODO: Add support for sklearn.utils shuffle
 # TODO: Add support for sklearn.utils resample
 # TODO: Add support for sklearn.metrics accuracy_score
 # TODO: Checkout Tensorflow Logging
 # TODO: Checkout Tensorboard
+# TODO: Add support for saving model history to a JSON file
+# TODO: Add support for saving model checkpoints
 
-# TODO: Add support of Exponential Decay Learning Rate
+# Actual TODOs
 
-# URGENT TODO: Dynamic batch sizing based on hardware
+# TODO: Dynamic batch sizing based on hardware
 # Example: JSON will have fixed batch based on hardware (fine tuned by user)
 # Then the code will check which hardware it is running on and choose the batch size accordingly
 # For example on an RTX 3070, batch size with mixed precision may be able to go as high as 256
 # But on a M4 Mac Mini, it may only be able to go as high as 32
 # And without mixed precision, it may only be able to go as high as 8
-
-# POTENTIAL TODO: Merge logs and plots into a single directory
-# POTENTIAL TODO: Add support for saving model history to a JSON file
-# POTENTIAL TODO: Add support for saving model checkpoints
 
 start_time = time.perf_counter()
 
@@ -371,7 +370,7 @@ if SAVE_BEST_MODEL:
     logger.info(f"Model saved as {model_save_path}")
     # Convert the model to Core ML format if on macOS
     if CONVERT_TO_COREML and system_platform == "Darwin":
-        from coreml_util import convert_to_coreml # Custom module that has CoreML conversion function
+        from utils.coreml_util import convert_to_coreml # Custom module that has CoreML conversion function
         convert_to_coreml(cnn_model, logger)
 else:
     logger.info("Model not saved. Set SAVE_BEST_MODEL to True to save the model.")
