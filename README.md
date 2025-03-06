@@ -5,16 +5,29 @@ Project for Santa Clara University (SCU) CSEN/COEN 240
 1. Create a model with high accuracy for classifying Knee Osteoarthritis
 
 ## Project Constrains
-Only the following may be optimized
+Base script was given and the following changes are either allowed or not allowed.
+
+<br>
+
+Allowed
 1. ML model
 2. Hyper-parameters
+3. Image augmentations (only to training set)
+   1. Rotation
+   2. Noise / denoise
+   3. Diffusion
+   4. etc.
    
 <br>
 
 Not allowed
-1. Chaning image scale
+1. Scale invariant transformations
    1. No color space manipulation (e.g. RGB -> greyscale)
    2. Resolution changes (upscale or downscale)
+   3. Cropping
+   4. Color content
+   5. Size
+   6. etc.
 
 ## Notes
 1. With `mixed-precision` on an RTX 3070 and M4 Mac Mini `batch_size` is most stable at 64 (from current testing)
