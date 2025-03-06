@@ -221,7 +221,7 @@ warnings.filterwarnings("ignore")
 
 train_df_new, temp_df_new = train_test_split(
     df_resampled,
-    train_size=0.8,
+    train_size=TRAIN_SPLIT,
     shuffle=True,
     random_state=RANDOM_SEED,
     stratify=df_resampled["category_encoded"],
@@ -231,7 +231,7 @@ train_df_new, temp_df_new = train_test_split(
 
 valid_df_new, test_df_new = train_test_split(
     temp_df_new,
-    test_size=0.5,
+    test_size=VALID_TEST_SPLIT,
     shuffle=True,
     random_state=RANDOM_SEED,
     stratify=temp_df_new["category_encoded"],
