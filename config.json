@@ -26,6 +26,11 @@
     "optimizer": "Adam",
     "loss_function": "sparse_categorical_crossentropy",
     "metrics": ["accuracy"],
+    "potential_metrics": ["MeanAbsoluteError"],
+    "tested_metrics": {
+      "pass": ["accuracy", "SparseCategoricalAccuracy"],
+      "fail": ["Precision", "MeanSquaredError", "Recall", "AUC"]
+    },
     "augmentation": {
       "rotation_range": 30,
       "width_shift_range": 0.1,

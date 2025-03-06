@@ -353,6 +353,8 @@ def create_xception_model(input_shape):
 img_shape = (IMG_SIZE[0], IMG_SIZE[1], CHANNELS)
 cnn_model = create_xception_model(img_shape)
 
+logger.info(f"Model summary (BEFORE): {cnn_model.summary()}")
+
 history = cnn_model.fit(
     train_gen_new,
     validation_data=valid_gen_new,
@@ -360,6 +362,8 @@ history = cnn_model.fit(
     callbacks=callbacks,
     verbose=1, # Verbose 0 for silent, 1 for progress bar, 2 for one line per epoch
 )
+
+logger.info(f"Model summary (AFTER): {cnn_model.summary()}")
 
 if SAVE_BEST_MODEL:
     out_dir = f"out/{IDENTIFIER}"
