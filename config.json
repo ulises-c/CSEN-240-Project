@@ -40,6 +40,15 @@
       "horizontal_flip": true,
       "vertical_flip": true,
       "fill_mode": "nearest"
+    },
+    "possible_augmenations":{
+      "brightness_range": [0.7, 1.3],
+      "contrast_range": [0.7, 1.3],
+      "hue_shift_range": 0.1,
+      "staturation_shift_range": 0.1,
+      "value_shift_range": 0.1,
+      "blur_range": [0.1, 0.3],
+      "noise_range": [0.1, 0.3]
     }
   }
   
