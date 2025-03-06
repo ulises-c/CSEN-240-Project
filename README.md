@@ -37,8 +37,11 @@ Not in any particular order
 
 ### How to run
 Use the `Makefile` which utilizes `helper_tools/requirements.txt` to create a consistent python environment across machines
-1. Clone the repo
-2. In the terminal, with the project directory open, enter the following command
+1. Make sure your host machine has `pyenv` installed
+   1. macOS - [github](https://github.com/pyenv/pyenv?tab=readme-ov-file#macos) | [brew](https://formulae.brew.sh/formula/pyenv)
+   2. Linux - [github](https://github.com/pyenv/pyenv?tab=readme-ov-file#linuxunix)
+2. Clone the repo
+3. In the terminal, with the project directory open, enter the following command
    1. `make run`
    2. `out/` will contain output data from model training, such as the following:
       1. logs
