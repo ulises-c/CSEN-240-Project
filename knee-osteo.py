@@ -423,7 +423,7 @@ def exec_time(end_time:float) -> str:
     minutes = (perf_time % 3600) // 60
     seconds = perf_time % 60
     milliseconds = (seconds - int(seconds)) * 1000
-    exec_time_str = f"{int(hours):02} H {int(minutes):02} M {int(seconds):02}.{int(milliseconds):03} S"
+    exec_time_str = f"{int(hours):02}H {int(minutes):02}M {int(seconds):02}.{int(milliseconds):03}S"
     logger.info(f"Execution Time: {exec_time_str}")
 
 execution_time = exec_time(time.perf_counter())
