@@ -143,11 +143,11 @@ current_time = datetime.now().isoformat(timespec="seconds")
 system_platform = platform.system()
 IDENTIFIER = f"{current_time}_{system_platform}"
 out_dir = "out"
-out_full_path = os.path.join(out_dir, IDENTIFIER)  # out/{IDENTIFIER}
+OUT_FULL_PATH = os.path.join(out_dir, IDENTIFIER)  # out/{IDENTIFIER}
 # Check if logs directory exists, create if not
-if not os.path.exists(out_full_path):
-    os.makedirs(out_full_path)
-log_file_name = f"{out_full_path}/knee_osteo_{IDENTIFIER}.log"
+if not os.path.exists(OUT_FULL_PATH):
+    os.makedirs(OUT_FULL_PATH)
+log_file_name = f"{OUT_FULL_PATH}/knee_osteo_{IDENTIFIER}.log"
 
 # Configure logging to write to the generated log file
 logging.basicConfig(
@@ -166,7 +166,7 @@ console.setFormatter(formatter)
 logger.addHandler(console)
 
 # Store copy of config.json in the output directory
-json_copy_name = f"{out_full_path}/config_{IDENTIFIER}.json"
+json_copy_name = f"{OUT_FULL_PATH}/config_{IDENTIFIER}.json"
 try:
     shutil.copy("config.json", json_copy_name)
     logger.info(f"config.json copied to {json_copy_name}")
@@ -174,13 +174,12 @@ except Exception as e:
     logger.error(f"Error copying config.json to {json_copy_name}: {e}")
 
 # Store a copy of this script in the output directory for reproducibility and debugging
-current_script_path = os.path.abspath(__file__)
-script_copy_name = f"{out_full_path}/knee_osteo_{IDENTIFIER}.py"
+script_copy_name = f"{OUT_FULL_PATH}/knee-osteo_{IDENTIFIER}.py"
 try:
-    shutil.copy(current_script_path, script_copy_name)
-    logger.info(f"Script copied to {script_copy_name}")
+    shutil.copy(__file__, script_copy_name)
+    logger.info(f"knee-osteo.py copied to {script_copy_name}")
 except Exception as e:
-    logger.error(f"Error copying script to {script_copy_name}: {e}")
+    logger.error(f"Error copying knee-osteo.py to {script_copy_name}: {e}")
 
 ### Log important information
 gpus = tf.config.list_physical_devices("GPU")
