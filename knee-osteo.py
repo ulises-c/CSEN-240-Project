@@ -91,7 +91,7 @@ ENABLE_MIXED_PRECISION = config["config"]["enable_mixed_precision"]
 USE_EARLY_STOPPING = config["config"]["use_early_stopping"]
 
 ### Hyperparameters section of the JSON file
-UNFREEZE_LAST_N_LAYERS = config["unfreeze_last_n_layers"]
+UNFREEZE_LAST_N_LAYERS = config["hyperparameters"]["unfreeze_last_n_layers"]
 # Reducing may help with VRAM issues, but may also reduce accuracy, original was 16
 BATCH_SIZE = config["hyperparameters"]["batch_size"]
 IMG_SIZE = tuple(config["hyperparameters"]["img_size"])
