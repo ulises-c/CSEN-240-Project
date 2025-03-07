@@ -120,6 +120,7 @@ ZOOM_RANGE = config["augmentation"]["zoom_range"]
 HORIZONTAL_FLIP = config["augmentation"]["horizontal_flip"]
 VERTICAL_FLIP = config["augmentation"]["vertical_flip"]
 FILL_MODE = config["augmentation"]["fill_mode"]
+# TODO: Implement other image augmentation techniques such as brightness, contrast, etc.
 
 # Set random seed for reproducibility, requires ENABLE_TF_DETERMINISM to be set to True
 random.seed(RANDOM_SEED)
@@ -171,6 +172,15 @@ try:
     logger.info(f"config.json copied to {json_copy_name}")
 except Exception as e:
     logger.error(f"Error copying config.json to {json_copy_name}: {e}")
+
+# Store a copy of this script in the output directory for reproducibility and debugging
+current_script_path = os.path.abspath(__file__)
+script_copy_name = f"{out_full_path}/knee_osteo_{IDENTIFIER}.py"
+try:
+    shutil.copy(current_script_path, script_copy_name)
+    logger.info(f"Script copied to {script_copy_name}")
+except Exception as e:
+    logger.error(f"Error copying script to {script_copy_name}: {e}")
 
 ### Log important information
 gpus = tf.config.list_physical_devices("GPU")
