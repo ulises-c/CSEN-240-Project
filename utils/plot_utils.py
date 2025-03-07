@@ -7,7 +7,9 @@ import os
 
 
 class PlotUtils:
-    def __init__(self, logger=None, save_dir="out", identifier=None, save=False, show=False):
+    def __init__(
+        self, logger=None, save_dir="out", identifier=None, save=False, show=False
+    ):
         """Initialize with optional parameters for saving, showing plots, and a unique identifier."""
         self.save_dir = save_dir
         self.identifier = identifier
@@ -19,10 +21,12 @@ class PlotUtils:
     def save_plot(self, plot_name):
         """Saves the current plot as a PNG file with a unique identifier."""
         if not self.identifier:
-            print("Identifier not set. Please provide one during initialization or when calling methods.")
+            print(
+                "Identifier not set. Please provide one during initialization or when calling methods."
+            )
             return
-        
-        full_path = os.path.join(self.save_dir, self.identifier) # out/{identifier}
+
+        full_path = os.path.join(self.save_dir, self.identifier)  # out/{identifier}
         if not os.path.exists(full_path):
             os.makedirs(full_path)
         save_path = os.path.join(full_path, f"{plot_name}_{self.identifier}.png")
@@ -40,14 +44,20 @@ class PlotUtils:
         plt.ylabel("Count", fontsize=12)
         plt.xticks(rotation=45)
         for p in plt.gca().patches:
-            plt.gca().annotate(f"{int(p.get_height())}", 
-                               (p.get_x() + p.get_width() / 2., p.get_height()), 
-                               ha="center", va="bottom", fontsize=11, color="black", 
-                               xytext=(0, 5), textcoords="offset points")
+            plt.gca().annotate(
+                f"{int(p.get_height())}",
+                (p.get_x() + p.get_width() / 2.0, p.get_height()),
+                ha="center",
+                va="bottom",
+                fontsize=11,
+                color="black",
+                xytext=(0, 5),
+                textcoords="offset points",
+            )
         if self.save and self.identifier:
             self.save_plot("label_distribution")
         if self.show:
-            plt.pause(self.plot_show_time) # Pause for a few seconds before closing
+            plt.pause(self.plot_show_time)  # Pause for a few seconds before closing
             plt.close()
 
     def plot_sample_images(self, df, categories, num_images=5):
@@ -55,7 +65,9 @@ class PlotUtils:
         sns.set_style("darkgrid")
         plt.figure(figsize=(15, 12))
         for i, category in enumerate(categories):
-            category_images = df[df["label"] == category]["image_path"].iloc[:num_images]
+            category_images = df[df["label"] == category]["image_path"].iloc[
+                :num_images
+            ]
             for j, img_path in enumerate(category_images):
                 img = cv2.imread(img_path)
                 if img is None:
@@ -70,7 +82,7 @@ class PlotUtils:
             self.save_plot("sample_images")
         plt.tight_layout()
         if self.show:
-            plt.pause(self.plot_show_time) # Pause for a few seconds before closing
+            plt.pause(self.plot_show_time)  # Pause for a few seconds before closing
             plt.close()
 
     def plot_training_history(self, history):
@@ -98,19 +110,25 @@ class PlotUtils:
         if self.save and self.identifier:
             self.save_plot("training_history")
         if self.show:
-            plt.pause(self.plot_show_time) # Pause for a few seconds before closing
+            plt.pause(self.plot_show_time)  # Pause for a few seconds before closing
             plt.close()
 
     def plot_confusion_matrix(self, conf_matrix, class_names):
         """Plots the confusion matrix."""
         plt.figure(figsize=(10, 8))
-        sns.heatmap(conf_matrix, annot=True, fmt="d", cmap="Blues",
-                    xticklabels=class_names, yticklabels=class_names)
+        sns.heatmap(
+            conf_matrix,
+            annot=True,
+            fmt="d",
+            cmap="Blues",
+            xticklabels=class_names,
+            yticklabels=class_names,
+        )
         plt.title("Confusion Matrix")
         plt.xlabel("Predicted Label")
         plt.ylabel("True Label")
         if self.save and self.identifier:
             self.save_plot("confusion_matrix")
         if self.show:
-            plt.pause(self.plot_show_time) # Pause for a few seconds before closing
+            plt.pause(self.plot_show_time)  # Pause for a few seconds before closing
             plt.close()
