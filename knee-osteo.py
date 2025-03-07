@@ -12,11 +12,13 @@ import tensorflow as tf
 import warnings
 import platform
 import logging
-import utils.plot_utils as plot_utils # Custom module that has plotting functions
-import json # To load hyperparameters from a JSON file, also used to save model history
-import random # To set random seed for reproducibility
+import utils.plot_utils as plot_utils  # Custom module that has plotting functions
+import json  # To load hyperparameters from a JSON file, also used to save model history
+import random  # To set random seed for reproducibility
 
-from utils.system_specs_util import log_system_specs # Custom module that has system specs logging function
+from utils.system_specs_util import (
+    log_system_specs,
+)  # Custom module that has system specs logging function
 from datetime import datetime
 from imblearn.over_sampling import RandomOverSampler
 from PIL import Image
@@ -32,8 +34,11 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras import regularizers, layers, models
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, LambdaCallback
 from tensorflow.keras.applications import Xception
+
 # from tensorflow.keras.mixed_precision import experimental as mixed_precision # may be useful for training on Apple Silicon or Nvidia GPUs with less VRAM
-from tensorflow.keras import mixed_precision # may be useful for training on Apple Silicon or Nvidia GPUs with less VRAM
+from tensorflow.keras import (
+    mixed_precision,
+)  # may be useful for training on Apple Silicon or Nvidia GPUs with less VRAM
 from tensorflow.keras.layers import (
     Conv2D,
     MaxPooling2D,
@@ -73,34 +78,48 @@ start_time = time.perf_counter()
 with open("config.json", "r") as f:
     config = json.load(f)
 
-ENABLE_PLOTS = config["enable_plots"]
-SAVE_PLOTS = config["save_plots"]
-SHOW_PLOTS = config["show_plots"]
-ENABLE_TF_DETERMINISM = config["enable_tf_determinism"]
-SAVE_BEST_MODEL = config["save_best_model"]
-CONVERT_TO_COREML = config["convert_to_coreml"]
-UNFREEZE_LAYERS = config["unfreeze_layers"]
+### Config section of the JSON file
+ENABLE_PLOTS = config["config"]["enable_plots"]
+SAVE_PLOTS = config["config"]["save_plots"]
+SHOW_PLOTS = config["config"]["show_plots"]
+ENABLE_TF_DETERMINISM = config["config"]["enable_tf_determinism"]
+SAVE_BEST_MODEL = config["config"]["save_best_model"]
+CONVERT_TO_COREML = config["config"]["convert_to_coreml"]
+UNFREEZE_LAYERS = config["config"]["unfreeze_layers"]
+RANDOM_SEED = config["config"]["random_seed"]
+ENABLE_MIXED_PRECISION = config["config"]["enable_mixed_precision"]
+USE_EARLY_STOPPING = config["config"]["use_early_stopping"]
+
+### Hyperparameters section of the JSON file
 UNFREEZE_LAST_N_LAYERS = config["unfreeze_last_n_layers"]
-RANDOM_SEED = config["random_seed"]
-BATCH_SIZE = config["batch_size"] # reducing may help with VRAM issues, but may also reduce accuracy, original was 16
-IMG_SIZE = tuple(config["img_size"])
-CHANNELS = config["channels"]
-LEARNING_RATE = config["learning_rate"]
-NUM_CLASSES = config["num_classes"]
-EPOCHS = config["epochs"]
-EARLY_STOPPING_PATIENCE = config["early_stopping_patience"]
-DROPOUT_RATE = config["dropout_rate"]
-GAUSSIAN_NOISE_STDDEV = config["gaussian_noise_stddev"]
-NUM_ATTENTION_HEADS = config["num_attention_heads"]
-ATTENTION_KEY_DIM = config["attention_key_dim"] # Based on the number of channels in the input (3 in this case for RGB)
-TRAIN_SPLIT = config["train_split"]
-VALID_TEST_SPLIT = config["valid_test_split"]
-ENABLE_MIXED_PRECISION = config["enable_mixed_precision"]
-USE_EARLY_STOPPING = config["use_early_stopping"]
-OPTIMIZER = config["optimizer"]
-LOSS_FUNCTION = config["loss_function"]
-METRICS = config["metrics"]
-AUGMENTATION = config["augmentation"]
+# Reducing may help with VRAM issues, but may also reduce accuracy, original was 16
+BATCH_SIZE = config["hyperparameters"]["batch_size"]
+IMG_SIZE = tuple(config["hyperparameters"]["img_size"])
+CHANNELS = config["hyperparameters"]["channels"]
+LEARNING_RATE = config["hyperparameters"]["learning_rate"]
+NUM_CLASSES = config["hyperparameters"]["num_classes"]
+EPOCHS = config["hyperparameters"]["epochs"]
+EARLY_STOPPING_PATIENCE = config["hyperparameters"]["early_stopping_patience"]
+DROPOUT_RATE = config["hyperparameters"]["dropout_rate"]
+GAUSSIAN_NOISE_STDDEV = config["hyperparameters"]["gaussian_noise_stddev"]
+NUM_ATTENTION_HEADS = config["hyperparameters"]["num_attention_heads"]
+# Based on the number of channels in the input (3 in this case for RGB)
+ATTENTION_KEY_DIM = config["hyperparameters"]["attention_key_dim"]
+TRAIN_SPLIT = config["hyperparameters"]["train_split"]
+VALID_TEST_SPLIT = config["hyperparameters"]["valid_test_split"]
+OPTIMIZER = config["hyperparameters"]["optimizer"]
+LOSS_FUNCTION = config["hyperparameters"]["loss_function"]
+METRICS = config["hyperparameters"]["metrics"]
+
+### Image augmentation section of the JSON file
+ROTATION_RANGE = config["augmentation"]["rotation_range"]
+WIDTH_SHIFT_RANGE = config["augmentation"]["width_shift_range"]
+HEIGHT_SHIFT_RANGE = config["augmentation"]["height_shift_range"]
+SHEAR_RANGE = config["augmentation"]["shear_range"]
+ZOOM_RANGE = config["augmentation"]["zoom_range"]
+HORIZONTAL_FLIP = config["augmentation"]["horizontal_flip"]
+VERTICAL_FLIP = config["augmentation"]["vertical_flip"]
+FILL_MODE = config["augmentation"]["fill_mode"]
 
 # Set random seed for reproducibility, requires ENABLE_TF_DETERMINISM to be set to True
 random.seed(RANDOM_SEED)
@@ -119,22 +138,29 @@ if ENABLE_MIXED_PRECISION:
     mixed_precision.set_global_policy(policy)
 
 # Generate log file name with ISO format date-time and system platform
-current_time = datetime.now().isoformat(timespec='seconds')
+current_time = datetime.now().isoformat(timespec="seconds")
 system_platform = platform.system()
 IDENTIFIER = f"{current_time}_{system_platform}"
-out_dir = 'out'
-out_full_path = os.path.join(out_dir, IDENTIFIER) # out/{IDENTIFIER}
+out_dir = "out"
+out_full_path = os.path.join(out_dir, IDENTIFIER)  # out/{IDENTIFIER}
 # Check if logs directory exists, create if not
 if not os.path.exists(out_full_path):
     os.makedirs(out_full_path)
 log_file_name = f"{out_full_path}/knee_osteo_{IDENTIFIER}.log"
 
 # Configure logging to write to the generated log file
-logging.basicConfig(level=logging.INFO, filename=log_file_name, filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO,
+    filename=log_file_name,
+    filemode="w",
+    format="%(asctime)s - %(levelname)s - %(message)s",
+)
 logger = logging.getLogger(__name__)
 console = logging.StreamHandler()
-console.setLevel(logging.INFO) # Set to INFO to display only important information, DEBUG to display all information
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+console.setLevel(
+    logging.INFO
+)  # Set to INFO to display only important information, DEBUG to display all information
+formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 console.setFormatter(formatter)
 logger.addHandler(console)
 
@@ -163,7 +189,7 @@ if gpus:
             tf.config.experimental.set_memory_growth(gpu, True)
         if system_platform == "Linux":
             logger.info("Using CUDA for acceleration on Nvidia GPU")
-        elif system_platform == "Darwin": # macOS
+        elif system_platform == "Darwin":  # macOS
             logger.info("Using Metal backend for acceleration on Apple Silicon")
 
     except RuntimeError as e:
@@ -194,7 +220,13 @@ df = pd.DataFrame({"image_path": image_paths, "label": labels})
 
 
 if ENABLE_PLOTS:
-    plotter = plot_utils.PlotUtils(logger=logger, save_dir=out_dir, identifier=IDENTIFIER, save=SAVE_PLOTS, show=SHOW_PLOTS)
+    plotter = plot_utils.PlotUtils(
+        logger=logger,
+        save_dir=out_dir,
+        identifier=IDENTIFIER,
+        save=SAVE_PLOTS,
+        show=SHOW_PLOTS,
+    )
     plotter.plot_label_distribution(df)
     plotter.plot_sample_images(df, categories, num_images=5)
 
@@ -240,14 +272,14 @@ valid_df_new, test_df_new = train_test_split(
 ### NOTE: This may not be allowed within project constraints ###
 train_data_gen = ImageDataGenerator(
     rescale=1.0 / 255,
-    rotation_range=AUGMENTATION["rotation_range"],
-    width_shift_range=AUGMENTATION["width_shift_range"],
-    height_shift_range=AUGMENTATION["height_shift_range"],
-    shear_range=AUGMENTATION["shear_range"],
-    zoom_range=AUGMENTATION["zoom_range"],
-    horizontal_flip=AUGMENTATION["horizontal_flip"],
-    vertical_flip=AUGMENTATION["vertical_flip"],
-    fill_mode=AUGMENTATION["fill_mode"],
+    rotation_range=ROTATION_RANGE,
+    width_shift_range=WIDTH_SHIFT_RANGE,
+    height_shift_range=HEIGHT_SHIFT_RANGE,
+    shear_range=SHEAR_RANGE,
+    zoom_range=ZOOM_RANGE,
+    horizontal_flip=HORIZONTAL_FLIP,
+    vertical_flip=VERTICAL_FLIP,
+    fill_mode=FILL_MODE,
 )
 
 # Validation and test data generators (no augmentation)
@@ -285,13 +317,17 @@ test_gen_new = valid_test_data_gen.flow_from_dataframe(
     batch_size=BATCH_SIZE,
 )
 
+
 def log_epoch_data(epoch, logs):
     # Temporarily disable the console handler, to prevent duplicate lines in console
     logger.removeHandler(console)
     # Log epoch data
-    logger.info(f"Epoch {epoch + 1:3} | Accuracy: {logs['accuracy']:.4f} | Loss: {logs['loss']:.4f} | Val Accuracy: {logs['val_accuracy']:.4f} | Val Loss: {logs['val_loss']:.4f}")
+    logger.info(
+        f"Epoch {epoch + 1:3} | Accuracy: {logs['accuracy']:.4f} | Loss: {logs['loss']:.4f} | Val Accuracy: {logs['val_accuracy']:.4f} | Val Loss: {logs['val_loss']:.4f}"
+    )
     # Re-enable the console handler
     logger.addHandler(console)
+
 
 # Set up Lambda callback to log epoch data
 log_epoch_callback = LambdaCallback(on_epoch_end=log_epoch_data)
@@ -313,6 +349,7 @@ lr_schedule = ExponentialDecay(
     staircase=True,
 )
 
+
 def create_xception_model(input_shape):
     inputs = Input(shape=input_shape, name="Input_Layer")
     base_model = Xception(weights="imagenet", input_tensor=inputs, include_top=False)
@@ -324,13 +361,15 @@ def create_xception_model(input_shape):
             layer.trainable = False
     else:
         base_model.trainable = False
-    
+
     x = base_model.output
     height, width, channels = x.shape[1], x.shape[2], x.shape[3]
     x = Reshape((height * width, channels), name="Reshape_to_Sequence")(x)
-    x = MultiHeadAttention(num_heads=NUM_ATTENTION_HEADS, key_dim=ATTENTION_KEY_DIM, name="Multi_Head_Attention")(
-        x, x
-    )
+    x = MultiHeadAttention(
+        num_heads=NUM_ATTENTION_HEADS,
+        key_dim=ATTENTION_KEY_DIM,
+        name="Multi_Head_Attention",
+    )(x, x)
     x = Reshape((height, width, channels), name="Reshape_to_Spatial")(x)
     x = GaussianNoise(GAUSSIAN_NOISE_STDDEV, name="Gaussian_Noise")(x)
     x = GlobalAveragePooling2D(name="Global_Avg_Pooling")(x)
@@ -341,11 +380,12 @@ def create_xception_model(input_shape):
     model = Model(inputs=inputs, outputs=outputs, name="Xception_with_Attention")
     model.compile(
         # optimizer=Adam(learning_rate=LEARNING_RATE), # Without learning rate schedule using exponential decay
-        optimizer = Adam(learning_rate=lr_schedule),
+        optimizer=Adam(learning_rate=lr_schedule),
         loss=LOSS_FUNCTION,
         metrics=METRICS,
     )
     return model
+
 
 img_shape = (IMG_SIZE[0], IMG_SIZE[1], CHANNELS)
 cnn_model = create_xception_model(img_shape)
@@ -357,7 +397,7 @@ history = cnn_model.fit(
     validation_data=valid_gen_new,
     epochs=EPOCHS,
     callbacks=callbacks,
-    verbose=1, # Verbose 0 for silent, 1 for progress bar, 2 for one line per epoch
+    verbose=1,  # Verbose 0 for silent, 1 for progress bar, 2 for one line per epoch
 )
 
 logger.info(f"Model summary (AFTER): {cnn_model.summary()}")
@@ -371,7 +411,10 @@ if SAVE_BEST_MODEL:
     logger.info(f"Model saved as {model_save_path}")
     # Convert the model to Core ML format if on macOS
     if CONVERT_TO_COREML and system_platform == "Darwin":
-        from utils.coreml_util import convert_to_coreml # Custom module that has CoreML conversion function
+        from utils.coreml_util import (
+            convert_to_coreml,
+        )  # Custom module that has CoreML conversion function
+
         convert_to_coreml(cnn_model, logger)
 else:
     logger.info("Model not saved. Set SAVE_BEST_MODEL to True to save the model.")
@@ -384,12 +427,12 @@ def ppo_loss(y_true, y_pred):
     epsilon = 0.2
     # Ensure the types of both tensors are compatible, casting to float32
     y_true_one_hot = tf.one_hot(tf.cast(y_true, tf.int32), depth=tf.shape(y_pred)[-1])
-    
+
     if ENABLE_MIXED_PRECISION:
         # Ensure both tensors are of the same type
         y_pred = tf.cast(y_pred, tf.float32)
         y_true_one_hot = tf.cast(y_true_one_hot, tf.float32)
-    
+
     selected_probs = tf.reduce_sum(y_pred * y_true_one_hot, axis=-1)
     old_selected_probs = tf.reduce_sum(
         tf.stop_gradient(y_pred) * y_true_one_hot, axis=-1
@@ -398,6 +441,7 @@ def ppo_loss(y_true, y_pred):
     clipped_ratio = tf.clip_by_value(ratio, 1 - epsilon, 1 + epsilon)
     loss = -tf.reduce_mean(tf.minimum(ratio, clipped_ratio))
     return loss
+
 
 ppo_loss_value = ppo_loss(y_true, y_pred)
 logger.info(f"PPO Loss on Validation Data: {ppo_loss_value.numpy()}")
@@ -415,17 +459,23 @@ conf_matrix = confusion_matrix(test_labels, predicted_classes)
 
 if ENABLE_PLOTS:
     plotter.plot_training_history(history)
-    plotter.plot_confusion_matrix(conf_matrix, class_names=list(test_gen_new.class_indices.keys()))
+    plotter.plot_confusion_matrix(
+        conf_matrix, class_names=list(test_gen_new.class_indices.keys())
+    )
 
-def exec_time(end_time:float) -> str:
+
+def exec_time(end_time: float) -> str:
     # Convert performance time to hours, minutes, and seconds
     perf_time = end_time - start_time
     hours = perf_time // 3600
     minutes = (perf_time % 3600) // 60
     seconds = perf_time % 60
     milliseconds = (seconds - int(seconds)) * 1000
-    exec_time_str = f"{int(hours):02}H {int(minutes):02}M {int(seconds):02}.{int(milliseconds):03}S"
+    exec_time_str = (
+        f"{int(hours):02}H {int(minutes):02}M {int(seconds):02}.{int(milliseconds):03}S"
+    )
     logger.info(f"Execution Time: {exec_time_str}")
+
 
 execution_time = exec_time(time.perf_counter())
 logger.info("--- END ---")

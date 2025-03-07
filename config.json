@@ -1,13 +1,18 @@
 {
+  "config": {
     "enable_plots": true,
-    "show_plots": false,
     "save_plots": true,
+    "show_plots": false,
     "enable_tf_determinism": false,
     "save_best_model": false,
     "convert_to_coreml": false,
     "unfreeze_layers": false,
-    "unfreeze_last_n_layers": 10,
     "random_seed": 42,
+    "enable_mixed_precision": true,
+    "use_early_stopping": true
+  },
+  "hyperparameters": {
+    "unfreeze_last_n_layers": 10,
     "batch_size": 64,
     "img_size": [224, 224],
     "channels": 3,
@@ -21,34 +26,35 @@
     "attention_key_dim": 3,
     "train_split": 0.8,
     "valid_test_split": 0.5,
-    "enable_mixed_precision": true,
-    "use_early_stopping": true,
     "optimizer": "Adam",
     "loss_function": "sparse_categorical_crossentropy",
     "metrics": ["accuracy"],
-    "potential_metrics": ["MeanAbsoluteError"],
-    "tested_metrics": {
+    "other_metrics": {
+      "unknown": ["MeanAbsoluteError"],
       "pass": ["accuracy", "SparseCategoricalAccuracy"],
       "fail": ["Precision", "MeanSquaredError", "Recall", "AUC"]
-    },
-    "augmentation": {
-      "rotation_range": 30,
-      "width_shift_range": 0.1,
-      "height_shift_range": 0.1,
-      "shear_range": 0.1,
-      "zoom_range": 0.1,
-      "horizontal_flip": true,
-      "vertical_flip": true,
-      "fill_mode": "nearest"
-    },
-    "possible_augmenations":{
+    }
+  },
+  "augmentation": {
+    "rotation_range": 180,
+    "width_shift_range": 0.1,
+    "height_shift_range": 0.1,
+    "shear_range": 0.1,
+    "zoom_range": 0.1,
+    "horizontal_flip": true,
+    "vertical_flip": true,
+    "fill_mode": "nearest",
+    "augmenations_to_test": {
       "brightness_range": [0.7, 1.3],
       "contrast_range": [0.7, 1.3],
-      "hue_shift_range": 0.1,
-      "staturation_shift_range": 0.1,
-      "value_shift_range": 0.1,
       "blur_range": [0.1, 0.3],
       "noise_range": [0.1, 0.3]
+    },
+    "disallowed_augmentations": {
+      "hue_shift_range": null,
+      "staturation_shift_range": null,
+      "value_shift_range": null,
+      "crop": null
     }
   }
-  
+}
