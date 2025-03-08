@@ -26,6 +26,9 @@
     "attention_key_dim": 3,
     "train_split": 0.8,
     "valid_test_split": 0.5,
+    "dense_layers": 512,
+    "l2_reg_rate": 0.01,
+    "activation_fn": "relu",
     "optimizer": "Adam",
     "loss_function": "sparse_categorical_crossentropy",
     "metrics": ["accuracy"],
@@ -33,7 +36,21 @@
       "unknown": ["MeanAbsoluteError"],
       "pass": ["accuracy", "SparseCategoricalAccuracy"],
       "fail": ["Precision", "MeanSquaredError", "Recall", "AUC"]
-    }
+    },
+    "base_model": "Xception",
+    "base_model_weights": "imagenet",
+    "base_model_include_top": false,
+    "other_models": {
+      "tested": ["Xception", "EfficientNetV2B0"],
+      "untested": [
+        "ResNet50V2",
+        "InceptionV3",
+        "MobileNetV2",
+        "DenseNet121",
+        "VGG16"
+      ]
+    },
+    "other_weights": null
   },
   "augmentation": {
     "rotation_range": 180,
