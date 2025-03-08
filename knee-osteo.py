@@ -41,7 +41,7 @@ from tensorflow.keras.callbacks import (
     LambdaCallback,
     ReduceLROnPlateau,
 )
-from tensorflow.keras.applications import Xception, EfficientNetV2B0
+from tensorflow.keras.applications import Xception, EfficientNetV2S
 
 # TODO: Test with other models such as ResNet50, InceptionV3, MobileNetV2, DenseNet121, VGG16, VGG19
 
