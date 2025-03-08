@@ -353,20 +353,13 @@ callbacks = [log_epoch_callback]
 if USE_EARLY_STOPPING:
     callbacks.append(early_stopping)
 
-lr_schedule = ExponentialDecay(
-    initial_learning_rate=LEARNING_RATE,
-    decay_steps=10000,
-    decay_rate=0.96,
-    staircase=True,
-)
-# TODO: Test other learning rate schedules such as reduce on plateau, cosine decay, etc.
-lr_schedule = ReduceLROnPlateau(
-    monitor="val_loss", factor=0.2, patience=5, min_lr=1e-7, verbose=1
-)
-
 img_shape = (IMG_SIZE[0], IMG_SIZE[1], CHANNELS)
 model_creator = ModelCreator(logger, HYPERPARAMETERS, CONFIG)
 cnn_model = model_creator.create_model(img_shape)
+
+# Add learning rate callback if it exists
+if model_creator.lr_callback:
+    callbacks.append(model_creator.lr_callback)
 
 logger.info(f"Model summary (BEFORE): {cnn_model.summary()}")
 
