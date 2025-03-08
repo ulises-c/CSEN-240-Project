@@ -19,6 +19,9 @@ import random  # To set random seed for reproducibility
 from utils.system_specs_util import (
     log_system_specs,
 )  # Custom module that has system specs logging function
+from utils.create_model_util import (
+    ModelCreator,
+)  # Custom module that has model creation function
 from datetime import datetime
 from imblearn.over_sampling import RandomOverSampler
 from PIL import Image
@@ -32,8 +35,15 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.optimizers.schedules import ExponentialDecay
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras import regularizers, layers, models
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, LambdaCallback
-from tensorflow.keras.applications import Xception
+from tensorflow.keras.callbacks import (
+    EarlyStopping,
+    ModelCheckpoint,
+    LambdaCallback,
+    ReduceLROnPlateau,
+)
+from tensorflow.keras.applications import Xception, EfficientNetV2B0
+
+# TODO: Test with other models such as ResNet50, InceptionV3, MobileNetV2, DenseNet121, VGG16, VGG19
 
 # from tensorflow.keras.mixed_precision import experimental as mixed_precision # may be useful for training on Apple Silicon or Nvidia GPUs with less VRAM
 from tensorflow.keras import (
@@ -79,6 +89,7 @@ with open("config.json", "r") as f:
     config = json.load(f)
 
 ### Config section of the JSON file
+CONFIG = config["config"]
 ENABLE_PLOTS = config["config"]["enable_plots"]
 SAVE_PLOTS = config["config"]["save_plots"]
 SHOW_PLOTS = config["config"]["show_plots"]
@@ -91,25 +102,16 @@ ENABLE_MIXED_PRECISION = config["config"]["enable_mixed_precision"]
 USE_EARLY_STOPPING = config["config"]["use_early_stopping"]
 
 ### Hyperparameters section of the JSON file
-UNFREEZE_LAST_N_LAYERS = config["hyperparameters"]["unfreeze_last_n_layers"]
+HYPERPARAMETERS = config["hyperparameters"]
 # Reducing may help with VRAM issues, but may also reduce accuracy, original was 16
 BATCH_SIZE = config["hyperparameters"]["batch_size"]
 IMG_SIZE = tuple(config["hyperparameters"]["img_size"])
 CHANNELS = config["hyperparameters"]["channels"]
 LEARNING_RATE = config["hyperparameters"]["learning_rate"]
-NUM_CLASSES = config["hyperparameters"]["num_classes"]
 EPOCHS = config["hyperparameters"]["epochs"]
 EARLY_STOPPING_PATIENCE = config["hyperparameters"]["early_stopping_patience"]
-DROPOUT_RATE = config["hyperparameters"]["dropout_rate"]
-GAUSSIAN_NOISE_STDDEV = config["hyperparameters"]["gaussian_noise_stddev"]
-NUM_ATTENTION_HEADS = config["hyperparameters"]["num_attention_heads"]
-# Based on the number of channels in the input (3 in this case for RGB)
-ATTENTION_KEY_DIM = config["hyperparameters"]["attention_key_dim"]
 TRAIN_SPLIT = config["hyperparameters"]["train_split"]
 VALID_TEST_SPLIT = config["hyperparameters"]["valid_test_split"]
-OPTIMIZER = config["hyperparameters"]["optimizer"]
-LOSS_FUNCTION = config["hyperparameters"]["loss_function"]
-METRICS = config["hyperparameters"]["metrics"]
 
 ### Image augmentation section of the JSON file
 ROTATION_RANGE = config["augmentation"]["rotation_range"]
@@ -357,47 +359,14 @@ lr_schedule = ExponentialDecay(
     decay_rate=0.96,
     staircase=True,
 )
-
-
-def create_xception_model(input_shape):
-    inputs = Input(shape=input_shape, name="Input_Layer")
-    base_model = Xception(weights="imagenet", input_tensor=inputs, include_top=False)
-
-    # Unfreeze last N layers if required (based on JSON hyperparameters)
-    if UNFREEZE_LAYERS:
-        base_model.trainable = True
-        for layer in base_model.layers[:-UNFREEZE_LAST_N_LAYERS]:
-            layer.trainable = False
-    else:
-        base_model.trainable = False
-
-    x = base_model.output
-    height, width, channels = x.shape[1], x.shape[2], x.shape[3]
-    x = Reshape((height * width, channels), name="Reshape_to_Sequence")(x)
-    x = MultiHeadAttention(
-        num_heads=NUM_ATTENTION_HEADS,
-        key_dim=ATTENTION_KEY_DIM,
-        name="Multi_Head_Attention",
-    )(x, x)
-    x = Reshape((height, width, channels), name="Reshape_to_Spatial")(x)
-    x = GaussianNoise(GAUSSIAN_NOISE_STDDEV, name="Gaussian_Noise")(x)
-    x = GlobalAveragePooling2D(name="Global_Avg_Pooling")(x)
-    x = Dense(512, activation="relu", name="FC_512")(x)
-    x = BatchNormalization(name="Batch_Normalization")(x)
-    x = Dropout(DROPOUT_RATE, name="Dropout")(x)
-    outputs = Dense(NUM_CLASSES, activation="softmax", name="Output_Layer")(x)
-    model = Model(inputs=inputs, outputs=outputs, name="Xception_with_Attention")
-    model.compile(
-        # optimizer=Adam(learning_rate=LEARNING_RATE), # Without learning rate schedule using exponential decay
-        optimizer=Adam(learning_rate=lr_schedule),
-        loss=LOSS_FUNCTION,
-        metrics=METRICS,
-    )
-    return model
-
+# TODO: Test other learning rate schedules such as reduce on plateau, cosine decay, etc.
+lr_schedule = ReduceLROnPlateau(
+    monitor="val_loss", factor=0.2, patience=5, min_lr=1e-7, verbose=1
+)
 
 img_shape = (IMG_SIZE[0], IMG_SIZE[1], CHANNELS)
-cnn_model = create_xception_model(img_shape)
+model_creator = ModelCreator(logger, HYPERPARAMETERS, CONFIG)
+cnn_model = model_creator.create_model(img_shape)
 
 logger.info(f"Model summary (BEFORE): {cnn_model.summary()}")
 
