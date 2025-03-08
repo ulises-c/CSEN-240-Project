@@ -20,7 +20,7 @@ from tensorflow.keras.callbacks import (
     LambdaCallback,
     ReduceLROnPlateau,
 )
-from tensorflow.keras.applications import Xception, EfficientNetV2B0
+from tensorflow.keras.applications import Xception, EfficientNetV2B0, EfficientNetV2S
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.optimizers.schedules import ExponentialDecay
 
@@ -128,7 +128,7 @@ class ModelCreator:
 
     def create_efficientnetv2_model(self, input_shape):
         inputs = Input(shape=input_shape, name="Input_Layer")
-        base_model = EfficientNetV2B0(
+        base_model = EfficientNetV2S(
             weights=self.BASE_MODEL_WEIGHTS,
             input_tensor=inputs,
             include_top=self.BASE_MODEL_INCLUDE_TOP,
@@ -167,7 +167,7 @@ class ModelCreator:
         self.logger.info(f"Creating model with base model: {self.BASE_MODEL}")
         if self.BASE_MODEL == "Xception":
             return self.create_xception_model(input_shape)
-        elif self.BASE_MODEL == "EfficientNetV2B0":
+        elif self.BASE_MODEL == "EfficientNetV2S":
             return self.create_efficientnetv2_model(input_shape)
         else:
             self.logger.error(f"Unsupported base model: {self.BASE_MODEL}")
