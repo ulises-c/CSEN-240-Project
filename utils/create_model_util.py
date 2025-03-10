@@ -137,7 +137,6 @@ class ModelCreator:
             weights=self.BASE_MODEL_WEIGHTS,
             input_tensor=inputs,
             include_top=self.BASE_MODEL_INCLUDE_TOP,
-            drop_connect_rate=0.2,  # Stochastic Depth
         )
 
         if self.UNFREEZE_LAYERS:
@@ -177,7 +176,6 @@ class ModelCreator:
             weights=self.BASE_MODEL_WEIGHTS,
             input_tensor=inputs,
             include_top=self.BASE_MODEL_INCLUDE_TOP,
-            drop_connect_rate=0.2,  # Stochastic Depth (fixed parameter name)
         )
 
         # Implement progressive layer unfreezing for better fine-tuning
@@ -466,8 +464,8 @@ class ModelCreator:
     def create_model(self, input_shape):
         self.logger.info(f"Creating model with base model: {self.BASE_MODEL}")
         if self.BASE_MODEL == "Xception":
-            return self.create_xception_model(input_shape)
+            return self.create_xception_model_test(input_shape)
         elif self.BASE_MODEL == "EfficientNetV2S":
-            return self.create_efficientnetv2_model(input_shape)
+            return self.create_efficientnetv2_model_test(input_shape)
         else:
             self.logger.error(f"Unsupported base model: {self.BASE_MODEL}")
