@@ -13,6 +13,10 @@ from tensorflow.keras.layers import (
     GaussianNoise,
     MultiHeadAttention,
     Reshape,
+    Multiply,
+    Add,
+    UpSampling2D,
+    Concatenate,
 )
 from tensorflow.keras.callbacks import (
     EarlyStopping,
@@ -23,6 +27,7 @@ from tensorflow.keras.callbacks import (
 from tensorflow.keras.applications import Xception, EfficientNetV2B0, EfficientNetV2S
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.optimizers.schedules import ExponentialDecay
+from tensorflow.keras.activations import relu, softmax, swish
 
 
 class ModelCreator:
@@ -132,6 +137,7 @@ class ModelCreator:
             weights=self.BASE_MODEL_WEIGHTS,
             input_tensor=inputs,
             include_top=self.BASE_MODEL_INCLUDE_TOP,
+            drop_connect_rate=0.2,  # Stochastic Depth
         )
 
         if self.UNFREEZE_LAYERS:
@@ -146,11 +152,11 @@ class ModelCreator:
         x = GaussianNoise(self.GAUSSIAN_NOISE_STDDEV, name="Gaussian_Noise")(x)
         x = Dense(
             self.DENSE_LAYERS,
-            activation=self.ACTIVATION_FN,
-            kernel_regularizer=regularizers.l2(self.L2_REG_RATE),
+            kernel_regularizer=regularizers.l2(0.001),
             name="FC_512",
         )(x)
         x = BatchNormalization(name="Batch_Normalization")(x)
+        x = Activation(swish, name="Activation")(x)
         x = Dropout(self.DROPOUT_RATE, name="Dropout")(x)
         outputs = Dense(self.NUM_CLASSES, activation="softmax", name="Output_Layer")(x)
         model = Model(
