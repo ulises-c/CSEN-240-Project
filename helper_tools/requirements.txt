@@ -1,4 +1,4 @@
-# pip install -r requirements.txt
+# pip install -r helper_tools/requirements.txt
 
 # Common dependencies
 numpy
@@ -19,4 +19,8 @@ tensorflow-metal; sys_platform == "darwin"
 coremltools; sys_platform == "darwin"
 
 # For PCs with Nvidia GPUs
-tensorflow[and-cuda]; sys_platform == "linux" or sys_platform == "win32"  # For Nvidia GPUs
+tensorflow[and-cuda]; sys_platform == "linux"
+tensorflow[and-cuda]; sys_platform == "win32" 
+
+# Needed for all platforms
+tensorflow

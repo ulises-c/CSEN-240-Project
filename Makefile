@@ -40,6 +40,9 @@ activate:
 
 clean:
 	rm -rf $(VENV_NAME)
+
+full-clean:
+	rm -rf $(VENV_NAME)
 	rm -rf $(EXTRACT_DIR)
 
 setup: install extract-images
