@@ -48,7 +48,12 @@
     "base_model_weights": "imagenet",
     "base_model_include_top": false,
     "other_models": {
-      "tested": ["Xception", "EfficientNetV2B0"],
+      "tested": [
+        "Xception",
+        "EfficientNetV2S",
+        "EfficientNetV2M",
+        "EfficientNetV2L"
+      ],
       "untested": [
         "ResNet50V2",
         "InceptionV3",
