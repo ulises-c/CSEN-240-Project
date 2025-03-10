@@ -174,13 +174,20 @@ try:
 except Exception as e:
     logger.error(f"Error copying config.json to {json_copy_name}: {e}")
 
-# Store a copy of this script in the output directory for reproducibility and debugging
-script_copy_name = f"{OUT_FULL_PATH}/knee-osteo_{IDENTIFIER}.py"
+# Store a copy of python scripts required in the output directory for reproducibility and debugging
+scripts_dir = f"{OUT_FULL_PATH}/scripts"
+util_scripts_to_copy = ["create_model_util.py", "system_specs_util.py", "plot_utils.py"]
 try:
-    shutil.copy(__file__, script_copy_name)
-    logger.info(f"knee-osteo.py copied to {script_copy_name}")
+    if not os.path.exists(f"{scripts_dir}/utils"):
+        os.makedirs(f"{scripts_dir}/utils")
+    shutil.copy(__file__, scripts_dir)
+    logger.info(f"{__file__} copied to {scripts_dir}")
+    for script in util_scripts_to_copy:
+        shutil.copy(f"utils/{script}", f"{scripts_dir}/utils")
+        logger.info(f"{script} copied to {scripts_dir}/utils")
+    logger.info(f"knee-osteo project copied to {scripts_dir}")
 except Exception as e:
-    logger.error(f"Error copying knee-osteo.py to {script_copy_name}: {e}")
+    logger.error(f"Error copying knee-osteo project to {scripts_dir}: {e}")
 
 ### Log important information
 gpus = tf.config.list_physical_devices("GPU")

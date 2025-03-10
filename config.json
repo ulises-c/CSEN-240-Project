@@ -4,7 +4,7 @@
     "save_plots": true,
     "show_plots": false,
     "enable_tf_determinism": false,
-    "save_best_model": false,
+    "save_best_model": true,
     "convert_to_coreml": false,
     "unfreeze_layers": true,
     "random_seed": 42,
