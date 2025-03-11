@@ -9,7 +9,7 @@
 VENV_NAME = py311
 PYTHON_VERSION = 3.11
 PYENV = pyenv
-INSTALL = pip install -r helper_tools/requirements.txt
+INSTALL = pip install -r requirements.txt
 PY_FILE = knee-osteo.py
 ZIP_FILE = Knee_Osteoarthritis_Classification_Camino.zip
 EXTRACT_DIR = images/
