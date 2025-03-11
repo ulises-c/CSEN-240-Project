@@ -123,11 +123,9 @@ ROTATION_RANGE = config["augmentation"]["rotation_range"]
 WIDTH_SHIFT_RANGE = config["augmentation"]["width_shift_range"]
 HEIGHT_SHIFT_RANGE = config["augmentation"]["height_shift_range"]
 SHEAR_RANGE = config["augmentation"]["shear_range"]
-ZOOM_RANGE = config["augmentation"]["zoom_range"]
 HORIZONTAL_FLIP = config["augmentation"]["horizontal_flip"]
 VERTICAL_FLIP = config["augmentation"]["vertical_flip"]
 FILL_MODE = config["augmentation"]["fill_mode"]
-BRIGHTNESS_RANGE = config["augmentation"]["brightness_range"]
 # TODO: Implement other image augmentation techniques such as brightness, contrast, etc.
 
 # Set random seed for reproducibility, requires ENABLE_TF_DETERMINISM to be set to True
@@ -293,18 +291,18 @@ valid_df_new, test_df_new = train_test_split(
 # logger.info(test_df_new.shape)
 
 # Train data generator (with augmentation)
-### NOTE: This may not be allowed within project constraints ###
+### NOTE: Careful with what is allowed within project constraints ###
+# NOTE: The config file has more options for augmentation that are not enabled to meet project constraints
 train_data_gen = ImageDataGenerator(
     rescale=1.0 / 255,
     rotation_range=ROTATION_RANGE,
-    width_shift_range=WIDTH_SHIFT_RANGE,
-    height_shift_range=HEIGHT_SHIFT_RANGE,
-    shear_range=SHEAR_RANGE,
-    zoom_range=ZOOM_RANGE,
     horizontal_flip=HORIZONTAL_FLIP,
     vertical_flip=VERTICAL_FLIP,
     fill_mode=FILL_MODE,
-    brightness_range=BRIGHTNESS_RANGE,
+    ### Possibly allowed within project constraints
+    # width_shift_range=WIDTH_SHIFT_RANGE,
+    # height_shift_range=HEIGHT_SHIFT_RANGE,
+    # shear_range=SHEAR_RANGE,
 )
 
 # Validation and test data generators (no augmentation)

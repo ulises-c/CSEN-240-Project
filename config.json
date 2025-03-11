@@ -78,21 +78,21 @@
     "width_shift_range": 0.1,
     "height_shift_range": 0.1,
     "shear_range": 0.1,
-    "zoom_range": 0.1,
     "horizontal_flip": true,
     "vertical_flip": true,
     "fill_mode": "nearest",
-    "brightness_range": [0.7, 1.3],
-    "augmenations_to_test": {
-      "contrast_range": [0.7, 1.3],
+    "untested_augmentations": {
       "blur_range": [0.1, 0.3],
       "noise_range": [0.1, 0.3]
     },
     "disallowed_augmentations": {
       "hue_shift_range": null,
-      "staturation_shift_range": null,
+      "saturation_shift_range": null,
       "value_shift_range": null,
-      "crop": null
+      "crop": null,
+      "zoom_range": null,
+      "brightness_range": null,
+      "contrast_range": null
     }
   }
 }
