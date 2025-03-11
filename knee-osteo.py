@@ -21,6 +21,7 @@ from utils.system_specs_util import (
 )  # Custom module that has system specs logging function
 from utils.create_model_util import (
     ModelCreator,
+    ProgressiveUnfreeze,
 )  # Custom module that has model creation function
 from datetime import datetime
 from imblearn.over_sampling import RandomOverSampler
@@ -99,9 +100,14 @@ UNFREEZE_LAYERS = config["config"]["unfreeze_layers"]
 RANDOM_SEED = config["config"]["random_seed"]
 ENABLE_MIXED_PRECISION = config["config"]["enable_mixed_precision"]
 USE_EARLY_STOPPING = config["config"]["use_early_stopping"]
+USE_PROGRESSIVE_UNFREEZING = config["config"]["use_progressive_unfreezing"]
 
 ### Hyperparameters section of the JSON file
 HYPERPARAMETERS = config["hyperparameters"]
+BASE_MODEL = config["hyperparameters"]["base_model"]
+PROGRESSIVE_UNFREEZE_SCHEDULE = config["hyperparameters"][
+    "progressive_unfreeze_schedule"
+]
 # Reducing may help with VRAM issues, but may also reduce accuracy, original was 16
 BATCH_SIZE = config["hyperparameters"]["batch_size"]
 IMG_SIZE = tuple(config["hyperparameters"]["img_size"])
@@ -121,6 +127,7 @@ ZOOM_RANGE = config["augmentation"]["zoom_range"]
 HORIZONTAL_FLIP = config["augmentation"]["horizontal_flip"]
 VERTICAL_FLIP = config["augmentation"]["vertical_flip"]
 FILL_MODE = config["augmentation"]["fill_mode"]
+BRIGHTNESS_RANGE = config["augmentation"]["brightness_range"]
 # TODO: Implement other image augmentation techniques such as brightness, contrast, etc.
 
 # Set random seed for reproducibility, requires ENABLE_TF_DETERMINISM to be set to True
@@ -252,7 +259,7 @@ df["category_encoded"] = label_encoder.fit_transform(df["label"])
 df = df[["image_path", "category_encoded"]]
 
 
-ros = RandomOverSampler(random_state=42)
+ros = RandomOverSampler(random_state=RANDOM_SEED)
 X_resampled, y_resampled = ros.fit_resample(df[["image_path"]], df["category_encoded"])
 df_resampled = pd.DataFrame(X_resampled, columns=["image_path"])
 df_resampled["category_encoded"] = y_resampled
@@ -297,6 +304,7 @@ train_data_gen = ImageDataGenerator(
     horizontal_flip=HORIZONTAL_FLIP,
     vertical_flip=VERTICAL_FLIP,
     fill_mode=FILL_MODE,
+    brightness_range=BRIGHTNESS_RANGE,
 )
 
 # Validation and test data generators (no augmentation)
@@ -349,7 +357,7 @@ def log_epoch_data(epoch, logs):
 # Set up Lambda callback to log epoch data
 log_epoch_callback = LambdaCallback(on_epoch_end=log_epoch_data)
 
-# Set up early stopping callback, higher patience may result in better accuracy
+# Set up early stopping callback
 early_stopping = EarlyStopping(
     monitor="val_loss", patience=EARLY_STOPPING_PATIENCE, restore_best_weights=True
 )
@@ -366,6 +374,19 @@ cnn_model = model_creator.create_model(img_shape)
 # Add learning rate callback if it exists
 if model_creator.lr_callback:
     callbacks.append(model_creator.lr_callback)
+
+# Set up the progressive unfreezing callback
+if USE_PROGRESSIVE_UNFREEZING:
+    progressive_unfreeze_schedule = PROGRESSIVE_UNFREEZE_SCHEDULE
+    progressive_unfreeze = ProgressiveUnfreeze(
+        logger=logger,
+        model=cnn_model,
+        unfreeze_schedule=progressive_unfreeze_schedule,
+    )
+    callbacks.append(progressive_unfreeze)
+    logger.info(
+        f"Added progressive unfreezing callback with schedule: {progressive_unfreeze_schedule}"
+    )
 
 logger.info(f"Model summary (BEFORE): {cnn_model.summary()}")
 
