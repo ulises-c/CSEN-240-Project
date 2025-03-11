@@ -407,7 +407,7 @@ if SAVE_BEST_MODEL:
     logger.info(f"Model saved as {model_save_path}")
     # Convert the model to Core ML format if on macOS
     if CONVERT_TO_COREML and system_platform == "Darwin":
-        from utils.coreml_util import (
+        from helper_tools.coreml_converter import (
             convert_to_coreml,
         )  # Custom module that has CoreML conversion function
 
