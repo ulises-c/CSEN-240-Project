@@ -1,87 +1,143 @@
-# CSEN-240-Project
+# CSEN-240 Project
 
-Project for Santa Clara University (SCU) CSEN/COEN 240
+A machine learning project for Santa Clara University’s CSEN/COEN 240 course focused on developing a high-accuracy classifier for Knee Osteoarthritis.
+
+<!-- [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://choosealicense.com/licenses/mit/) -->
+
+---
+
+## Table of Contents
+
+- [CSEN-240 Project](#csen-240-project)
+  - [Table of Contents](#table-of-contents)
+  - [How to Run](#how-to-run)
+  - [Project Objectives](#project-objectives)
+  - [Project Constraints](#project-constraints)
+    - [Allowed Changes](#allowed-changes)
+    - [Not Allowed Changes](#not-allowed-changes)
+  - [Notes \& Code Improvements](#notes--code-improvements)
+    - [System Notes](#system-notes)
+    - [Changes Made to Base Code](#changes-made-to-base-code)
+  - [Monitoring Performance](#monitoring-performance)
+  - [Models Evaluated](#models-evaluated)
+
+---
+
+## How to Run
+
+This project uses a Makefile along with a dedicated helper_tools/requirements.txt to ensure a consistent Python environment across different machines.
+
+1. **Install Prerequisites:**
+
+   - Ensure you have [pyenv](https://github.com/pyenv/pyenv) installed.
+     - macOS: Installation via Homebrew -> https://formulae.brew.sh/formula/pyenv
+     - Linux: Installation instructions on GitHub -> https://github.com/pyenv/pyenv#installation
+
+2. **Clone the Repository:**
+
+   ```
+   git clone https://github.com/ulises-c/CSEN-240-Project.git
+   ```
+
+3. **Run the Project:**
+
+   - Execute the following command:
+
+   ```
+   make run
+   ```
+
+
+   - After running, check the `out/` directory for generated data:
+     - Logs
+     - Plots
+     - Trained Models
+
+---
 
 ## Project Objectives
 
-1. Create a model with high accuracy for classifying Knee Osteoarthritis
+- **Primary Goal:** Develop a machine learning model with high accuracy for classifying Knee Osteoarthritis.
+- **Focus Areas:**
+  - Data augmentation techniques for the training set.
+  - Optimized hyper-parameter tuning.
+  - Experimentation with different model architectures.
 
-## Project Constrains
+---
 
-Base script was given and the following changes are either allowed or not allowed.
+## Project Constraints
 
-<br>
+The project builds upon a provided base script. Modifications are allowed as follows:
 
-Allowed
+### Allowed Changes
 
-1. ML model
-2. Hyper-parameters
-3. Image augmentations (only to training set)
-   1. Rotation
-   2. Noise / denoise
-   3. Diffusion
-   4. etc.
+- Adjustments to the ML model architecture.
+- Tuning of hyper-parameters.
+- Applying image augmentations (training set only), such as:
+  - Rotation
+  - Noise addition or denoising
+  - Diffusion effects
+  - Etc.
 
-<br>
+### Not Allowed Changes
 
-Not allowed
+- Any HSV adjustments.
+- Crop operations.
+- Scale-invariant transformations, including:
+  - Color space manipulations (e.g., RGB to greyscale)
+  - Resolution adjustments (upscaling or downscaling)
+  - Changes to color content or image size
 
-1. Verified Not allowed
+---
 
-   1. HSV
-   2. Crop
+## Notes & Code Improvements
 
-2. Scale invariant transformations
-   1. No color space manipulation (e.g. RGB -> greyscale)
-   2. Resolution changes (upscale or downscale)
-   3. Cropping
-   4. Color content
-   5. Size
-   6. etc.
+### System Notes
 
-## Notes
+- With mixed-precision enabled:
+  - RTX 3070: Best stability with a batch_size of 64.
+  - M4 Mac Mini: Also tested with batch_size 64.
 
-1. With `mixed-precision` on an RTX 3070 and M4 Mac Mini `batch_size` is most stable at 64 (from current testing)
+### Changes Made to Base Code
 
-### Changes made to base code
+- **Code Refactoring:**
+  - Organized and cleaned up import statements.
+  - Converted Jupyter notebook cells to a standard Python script.
+- **Helper Tools:**
+  - Created scripts for cross-platform compatibility (macOS, Linux).
+- **Visualization:**
+  - Separated plotting functionality into a dedicated plot_util.py.
+- **Logging:**
+  - Implemented detailed logging for data, parameters, and training processes to ensure reproducibility.
+- **Configuration:**
+  - Externalized hyper-parameters and other configuration settings into a JSON file.
+- **Learning Rate:**
+  - Replaced fixed learning rate with an exponential decay schedule.
+- **Data Augmentation:**
+  - Enhanced training data using techniques like rotation, vertical/horizontal flip, zoom, shifts, and shearing.
+- **Mixed-Precision:**
+  - Enabled mixed-precision mode, reducing training time and memory usage.
 
-Not in any particular order
+---
 
-1. Cleaned up imports
-2. Changed from notebook cell style to traditional python script
-3. Created helper tools to have this run on macOS (Apple Silicon) and Linux
-   1. More on that in `How to run` section
-4. Created `plot_util.py` instead of keeping plots in `knee-osteo.py`
-5. Logging data and parameters to have traceability so that models can easily be recreated
-6. Made hyper-parameters and other config parameter read from a JSON file
-7. Changed learning rate to use exponential decay instead a fixed learning rate
-8. Augmented training data (rotation, vertical flip, horizontal flip, zoom, height shift, width shift, shearing, etc.)
-9. Enabled `mixed-precision` mode
-   1. This was a big game changer, reduced training time heavily by allowing better use of more recent hardware
-   2. Increased `batch_size` as a result of reduced VRAM usage
+## Monitoring Performance
 
-### How to run
+Monitor GPU usage during training using platform-specific tools:
 
-Use the `Makefile` which utilizes `helper_tools/requirements.txt` to create a consistent python environment across machines
+- Ubuntu: [nvtop](https://github.com/Syllo/nvtop)
+- macOS: [asitop](https://github.com/tlkh/asitop)
 
-1. Make sure your host machine has `pyenv` installed
-   1. macOS - [github](https://github.com/pyenv/pyenv?tab=readme-ov-file#macos) | [brew](https://formulae.brew.sh/formula/pyenv)
-   2. Linux - [github](https://github.com/pyenv/pyenv?tab=readme-ov-file#linuxunix)
-2. Clone the repo
-3. In the terminal, with the project directory open, enter the following command
-   1. `make run`
-   2. `out/` will contain output data from model training, such as the following:
-      1. logs
-      2. plots
-      3. models
+---
 
-## Monitor performance
+## Models Evaluated
 
-Monitor GPU usage as you train with one of the following tools depending on your platform
-
-- Ubuntu: nvtop - [github](https://github.com/Syllo/nvtop?tab=readme-ov-file#nvtop)
-- macOS: asitop - [github](https://github.com/tlkh/asitop) | [brew](https://formulae.brew.sh/formula/asitop)
-
-## Models
-
-efficient-net v2 - small / large
+- [x] EfficientNetV2 (Small, Medium, Large)
+- [x] Xception
+- [x] ResNet50
+- [x] ResNet152
+- [x] Vision Transformer (ViT)
+  - ViT Reference -> https://www.kaggle.com/models/spsayakpaul/vision-transformer/TensorFlow2/vit-b8-classification/1
+- [ ] InceptionV3
+- [ ] MobileNetV2
+- [ ] DenseNet121
+- [ ] VGG16
