@@ -2,6 +2,8 @@
 
 A machine learning project for Santa Clara University’s CSEN/COEN 240 course focused on developing a high-accuracy classifier for Knee Osteoarthritis.
 
+[Results & Project Presentation (PDF)](assets/CSEN_240_Project_Presentation.pdf)
+
 <!-- [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://choosealicense.com/licenses/mit/) -->
 
 ---
@@ -46,7 +48,6 @@ This project uses a Makefile along with a dedicated helper_tools/requirements.tx
    ```
    make run
    ```
-
 
    - After running, check the `out/` directory for generated data:
      - Logs
